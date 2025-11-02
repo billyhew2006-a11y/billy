@@ -3,108 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SDA Portal Login</title>
-    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Inter font --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <title>SDA Portal - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Custom animation for the error message */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .animate-shake {
-            animation: shake 0.3s ease-out;
-        }
     </style>
-</head>
-<body class="bg-black text-slate-200 antialiased min-h-screen flex flex-col items-center justify-center p-6">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const statusMessage = document.getElementById('statusMessage');
 
-    <!-- Login Card -->
-    <div class="bg-gray-900 border border-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-sm">
-        
-        <!-- Logo -->
-        <a href="index.html" class="flex items-center justify-center space-x-3 mb-6">
-            <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/sdalogo.jpeg" alt="SDA Logo" class="h-12 w-12 object-contain"
-                 onerror="this.src='https://placehold.co/100x100/334155/white?text=SDA'; this.onerror=null;">
-            <span class="text-xl font-bold text-slate-100">SDA Portal</span>
+            // --- Define Valid Logins ---
+            // We'll store usernames (lowercase) and their corresponding passwords and roles.
+            const validLogins = {
+                'izzi': { password: 'Trenchbull1', role: 'admin' },
+                'tayla': { password: 'Newt2026', role: 'admin' },
+                'hayley': { password: 'Miracle3', role: 'admin' },
+                'jamie': { password: 'Revolting4', role: 'admin' },
+                'billy': { password: 'Admin', role: 'admin' }
+            };
+            // ---------------------------
+
+            if (loginForm) {
+                loginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const username = document.getElementById('username').value.toLowerCase(); // Convert to lowercase for matching
+                    const password = document.getElementById('password').value;
+
+                    // 1. Check if username exists
+                    if (validLogins.hasOwnProperty(username)) {
+                        const userLogin = validLogins[username];
+
+                        // 2. Check if password matches
+                        if (userLogin.password === password) {
+                            // --- SUCCESS ---
+                            statusMessage.textContent = 'Login successful! Redirecting...';
+                            statusMessage.className = 'text-green-400 text-sm text-center';
+                            
+                            // 3. Save the user's role to session storage
+                            // The portal-content.html page will read this to see who logged in.
+                            sessionStorage.setItem('userRole', userLogin.role);
+                            
+                            // 4. Redirect to the portal
+                            setTimeout(() => {
+                                window.location.href = 'portal-content.html';
+                            }, 1000); // 1-second delay
+
+                        } else {
+                            // --- FAILED: Wrong Password ---
+                            statusMessage.textContent = 'Invalid username or password.';
+                            statusMessage.className = 'text-red-400 text-sm text-center';
+                        }
+                    } else {
+                        // --- FAILED: Wrong Username ---
+                        statusMessage.textContent = 'Invalid username or password.';
+                        statusMessage.className = 'text-red-400 text-sm text-center';
+                    }
+                });
+            }
+        });
+    </script>
+</head>
+<body class="bg-black text-slate-200 antialiased min-h-screen flex items-center justify-center p-6">
+
+    <main class="w-full max-w-md">
+        <!-- Logo Header -->
+        <a href="index.html" class="flex justify-center items-center space-x-3 mb-8">
+            <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/sdalogo.jpeg" 
+                 alt="SDA Logo" 
+                 class="h-12 w-12 object-contain"
+                 onerror="this.src='https://placehold.co/100x100/000000/white?text=SDA'; this.onerror=null;">
+            <span class="text-2xl font-bold text-slate-100">SDA Portal</span>
         </a>
 
         <!-- Login Form -->
-        <form id="loginForm" class="space-y-6">
+        <form id="loginForm" class="bg-gray-900 border border-slate-800 shadow-2xl rounded-lg p-8 space-y-6">
+            
             <div>
                 <label for="username" class="block text-sm font-medium text-slate-300">Username</label>
-                <input type="text" id="username" name="username" required
-                       class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="text" id="username" required 
+                       class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             </div>
             
             <div>
                 <label for="password" class="block text-sm font-medium text-slate-300">Password</label>
-                <input type="password" id="password" name="password" required
-                       class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="password" id="password" required 
+                       class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             </div>
 
-            <!-- Error Message Placeholder -->
-            <div id="errorMessage" class="text-red-400 text-sm font-medium text-center hidden">
-                Invalid username or password.
+            <!-- Status Message Area -->
+            <div id="statusMessage" class="text-sm text-center" role="alert">
+                <!-- Messages (e.g., 'Invalid password') will appear here -->
             </div>
-
-            <button type="submit"
-                    class="w-full bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-indigo-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-black">
+            
+            <button type="submit" 
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-indigo-500 transition-colors duration-200">
                 Sign In
             </button>
         </form>
-    </div>
-
-    <!-- Back to Home -->
-    <a href="index.html" class="mt-6 text-slate-400 hover:text-indigo-400 text-sm transition-colors">
-        &larr; Back to Main Site
-    </a>
-
-    <!-- Login Script -->
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
-            // Prevent the form from actually submitting
-            event.preventDefault();
-
-            // Clear any previous roles
-            sessionStorage.removeItem('userRole');
-
-            // Get the values from the form
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('errorMessage');
-
-            // --- MODIFIED ---
-            // Check for either set of credentials
-            const isMatilda = (username === 'Matilda' && password === 'Matilda2026!');
-            const isAdmin = (username === 'Billy' && password === 'Admin');
-
-            if (isAdmin) {
-                // Set role for Admin and redirect
-                sessionStorage.setItem('userRole', 'admin');
-                window.location.href = 'portal-content.html';
-            } else if (isMatilda) {
-                // Set role for Viewer and redirect
-                sessionStorage.setItem('userRole', 'viewer');
-                window.location.href = 'portal-content.html';
-            } else {
-                // Incorrect: Show and animate the error message
-                errorMessage.classList.remove('hidden');
-                errorMessage.classList.add('animate-shake');
-                
-                // Remove animation after it finishes
-                setTimeout(() => {
-                    errorMessage.classList.remove('animate-shake');
-                }, 300);
-            }
-        });
-    </script>
+    </main>
 
 </body>
 </html>
