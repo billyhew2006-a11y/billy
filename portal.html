@@ -72,14 +72,26 @@
             // Prevent the form from actually submitting
             event.preventDefault();
 
+            // Clear any previous roles
+            sessionStorage.removeItem('userRole');
+
             // Get the values from the form
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
 
-            // Check the credentials
-            if (username === 'Matilda' && password === 'Matilda2026!') {
-                // Correct: Redirect to the portal content page
+            // --- MODIFIED ---
+            // Check for either set of credentials
+            const isMatilda = (username === 'Matilda' && password === 'Matilda2026!');
+            const isAdmin = (username === 'Billy' && password === 'Admin');
+
+            if (isAdmin) {
+                // Set role for Admin and redirect
+                sessionStorage.setItem('userRole', 'admin');
+                window.location.href = 'portal-content.html';
+            } else if (isMatilda) {
+                // Set role for Viewer and redirect
+                sessionStorage.setItem('userRole', 'viewer');
                 window.location.href = 'portal-content.html';
             } else {
                 // Incorrect: Show and animate the error message
