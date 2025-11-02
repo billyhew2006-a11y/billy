@@ -37,7 +37,8 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         let firebaseConfig;
         try {
-            firebaseConfig = JSON.parse(___firebase_config);
+            // --- FIX --- Changed from ___firebase_config (three) to __firebase_config (two)
+            firebaseConfig = JSON.parse(__firebase_config);
         } catch (e) {
             console.error("Firebase config is not available or invalid.");
             firebaseConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" }; // Fallback
