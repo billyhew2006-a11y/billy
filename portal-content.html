@@ -45,7 +45,8 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
             getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, 
-            onSnapshot, collection, query, serverTimestamp, increment, deleteField 
+            onSnapshot, collection, query, serverTimestamp, increment, deleteField,
+            arrayUnion, arrayRemove // <-- IMPORTED NEW FUNCTIONS
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         // We no longer need the 'firebase/storage' imports
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
@@ -100,7 +101,7 @@
                 if (user) {
                     // User is signed in.
                     console.log('Firebase auth successful, user:', user.uid);
-                    currentUserId = user.uid;
+                    currentUserId = user.uid; // <-- STORE THE UNIQUE FIREBASE USER ID
                     // 3. Load forum posts
                     loadPosts();
                 } else {
@@ -108,7 +109,7 @@
                     console.log('No user signed in, attempting anonymous auth...');
                     try {
                         const userCredential = await signInAnonymously(auth);
-                        currentUserId = userCredential.user.uid;
+                        currentUserId = userCredential.user.uid; // <-- STORE THE UNIQUE FIREBASE USER ID
                         console.log('Anonymous sign-in successful:', currentUserId);
                         // 3. Load forum posts
                         loadPosts();
@@ -126,6 +127,87 @@
             }
         });
 
+        // --- Dropbox Embed Helper Functions ---
+
+        /**
+         * Converts a Dropbox share link to a direct renderable link.
+         * from: https://www.dropbox.com/s/...?dl=0
+         * to:   https://www.dropbox.com/s/...?raw=1
+         */
+        function getDropboxEmbedLink(url) {
+            if (!url) return null;
+            
+            // If it's a standard share link, replace ?dl=0 with ?raw=1
+            if (url.includes("?dl=0")) {
+                return url.replace("?dl=0", "?raw=1");
+            }
+            // If it's already a raw link, it's good
+            if (url.includes("?raw=1")) {
+                return url;
+            }
+            // If it's a link with no params, add ?raw=1
+            if (url.includes("dropbox.com/") && !url.includes("?")) {
+                 return url + "?raw=1";
+            }
+            // Fallback for other links (like ?dl=1, which won't embed)
+            return url;
+        }
+
+        /**
+         * Generates the correct HTML for video, audio, or a generic link.
+         */
+        function generateEmbedHTML(fileURL) {
+            // Use the original URL for the generic link
+            const genericURL = fileURL;
+            // Get the modified URL for embedding media
+            const embedURL = getDropboxEmbedLink(fileURL);
+
+            if (!embedURL) return '';
+
+            const lowerURL = embedURL.toLowerCase();
+
+            // Video
+            if (lowerURL.includes('.mp4') || lowerURL.includes('.webm') || lowerURL.includes('.mov')) {
+                let mimeType = 'video/mp4';
+                if (lowerURL.includes('.webm')) mimeType = 'video/webm';
+                if (lowerURL.includes('.mov')) mimeType = 'video/quicktime';
+                return `
+                <div class="mt-4">
+                    <video controls class="w-full rounded-lg" style="max-height: 400px; background-color: #000;">
+                      <source src="${embedURL}" type="${mimeType}">
+                      Your browser does not support the video tag.
+                    </video>
+                </div>
+                `;
+            }
+
+            // Audio
+            if (lowerURL.includes('.mp3') || lowerURL.includes('.wav') || lowerURL.includes('.ogg')) {
+                let mimeType = 'audio/mpeg';
+                if (lowerURL.includes('.wav')) mimeType = 'audio/wav';
+                if (lowerURL.includes('.ogg')) mimeType = 'audio/ogg';
+                return `
+                <div class="mt-4">
+                    <audio controls class="w-full">
+                      <source src="${embedURL}" type="${mimeType}">
+                      Your browser does not support the audio tag.
+                    </audio>
+                </div>
+                `;
+            }
+            
+            // Generic Link (if fileURL exists but isn't media)
+            return `
+                <div class="mt-4">
+                    <a href="${genericURL}" target="_blank" 
+                       class="inline-flex items-center space-x-2 text-indigo-400 hover:text-indigo-300 font-medium py-2 px-4 bg-indigo-900/50 rounded-lg transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        <span>View Dropbox File</span>
+                    </a>
+                </div>
+            `;
+        }
+
         // --- Post Loading ---
         function loadPosts() {
             if (!currentUserId) return; // Not logged in
@@ -139,7 +221,10 @@
             // Listen for real-time updates
             onSnapshot(q, (snapshot) => {
                 loadingSpinner.classList.add('hidden');
-                postList.innerHTML = ''; // Clear old posts
+                
+                // ** BUG FIX **
+                // DO NOT clear the entire list. Process the changes one by one.
+                // postList.innerHTML = ''; // <-- THIS WAS THE BUG. IT'S GONE.
 
                 if (snapshot.empty) {
                     postList.innerHTML = '<p class="text-slate-400 text-center">No announcements yet.</p>';
@@ -189,8 +274,10 @@
 
             const date = post.createdAt ? post.createdAt.toDate().toLocaleString('en-AU') : 'Just now';
 
-            const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
-            const hasLiked = likedPosts[postId] === true;
+            // --- NEW LIKE LOGIC ---
+            // Stop using localStorage. Check if the database 'likedBy' array includes this user's ID.
+            const hasLiked = post.likedBy && post.likedBy.includes(currentUserId);
+            // ---------------------
 
             // Admin Delete Button - no longer needs data-file-path
             const deleteButtonHtml = userRole === 'admin' ? `
@@ -199,16 +286,10 @@
                 </button>
             ` : '';
 
-            // File Download Link - now links directly to post.fileURL
-            const fileLinkHtml = post.fileURL ? `
-                <div class="mt-4">
-                    <a href="${post.fileURL}" target="_blank" 
-                       class="inline-flex items-center space-x-2 text-indigo-400 hover:text-indigo-300 font-medium py-2 px-4 bg-indigo-900/50 rounded-lg transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                        <span>View Dropbox File</span>
-                    </a>
-                </div>
-            ` : '';
+            // --- NEW EMBED LOGIC ---
+            // Generate the media/link HTML
+            const fileLinkHtml = generateEmbedHTML(post.fileURL);
+            // ---------------------
 
             postDiv.innerHTML = `
                 <div class="p-6">
@@ -225,16 +306,17 @@
                 <div class="bg-gray-950/50 border-t border-slate-800 px-6 py-4">
                     <button data-post-id="${postId}" class="like-btn flex items-center space-x-2 text-slate-400 hover:text-red-500 transition-colors ${hasLiked ? 'text-red-500' : ''}">
                         <svg class="w-6 h-6" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 20.25l-7.682-7.682a4.5 4.5 0 010-6.364z"></path></svg>
-                        <span class="font-medium">${post.likes || 0}</span>
+                        <!-- Use new 'likesCount' field -->
+                        <span class="font-medium">${post.likesCount || 0}</span>
                     </button>
                 </div>
             `;
 
             // --- Add Event Listeners ---
-            // Like Button
+            // Like Button - No longer passes 'hasLiked'
             const likeBtn = postDiv.querySelector('.like-btn');
             if (likeBtn) {
-                likeBtn.addEventListener('click', () => handleLike(postId, hasLiked));
+                likeBtn.addEventListener('click', () => handleLike(postId));
             }
             // Delete Button
             const deleteBtn = postDiv.querySelector('.delete-post-btn');
@@ -269,7 +351,10 @@
                     postedBy: username,
                     content: content,
                     createdAt: serverTimestamp(),
-                    likes: 0,
+                    // --- NEW LIKE FIELDS ---
+                    likesCount: 0,
+                    likedBy: [],
+                    // ---------------------
                     fileURL: fileURL || null, // Save the link (or null)
                     // filePath and fileName are no longer needed
                 });
@@ -285,30 +370,47 @@
             }
         }
 
-        // --- Handle Like ---
-        async function handleLike(postId, hasAlreadyLiked) {
-            if (hasAlreadyLiked) {
-                console.log("You already liked this post.");
+        // --- Handle Like (Completely new logic) ---
+        async function handleLike(postId) {
+            if (!currentUserId) {
+                console.error("Not logged in, cannot like post.");
                 return;
             }
-
-            const postRef = doc(db, "portals/sda-portal/posts", postId);
             
-            try {
-                // Update likes in Firestore
-                await updateDoc(postRef, {
-                    likes: increment(1)
-                });
+            const postRef = doc(db, "portals/sda-portal/posts", postId);
 
-                // Save to localStorage to prevent re-liking
-                const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
-                likedPosts[postId] = true;
-                localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
+            try {
+                // Get the latest post data, just to be safe
+                const postDoc = await getDoc(postRef);
+                if (!postDoc.exists()) {
+                    console.error("Post does not exist.");
+                    return;
+                }
+                
+                const postData = postDoc.data();
+                const likedBy = postData.likedBy || [];
+                const hasLiked = likedBy.includes(currentUserId);
+
+                if (hasLiked) {
+                    // --- USER WANTS TO UNLIKE ---
+                    await updateDoc(postRef, {
+                        likesCount: increment(-1),
+                        likedBy: arrayRemove(currentUserId)
+                    });
+                } else {
+                    // --- USER WANTS TO LIKE ---
+                    await updateDoc(postRef, {
+                        likesCount: increment(1),
+                        likedBy: arrayUnion(currentUserId)
+                    });
+                }
 
             } catch (error) {
                 console.error("Error liking post:", error);
+                alert("Error updating like: " + error.message);
             }
         }
+
 
         // --- Handle Delete Post ---
         async function handleDeletePost(postId) { // No longer needs filePath
