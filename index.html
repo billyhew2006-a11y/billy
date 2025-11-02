@@ -13,13 +13,13 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Hero gradient with blue tones */
+        /* Hero section background */
         .hero-gradient {
-            background: linear-gradient(to right, #1e293b, #0f172a); /* Dark blue/slate gradient */
+            background: #000000; /* Plain pitch black */
         }
         @media (min-width: 768px) {
             .hero-gradient {
-                background: linear-gradient(to right, #1e293b 60%, #1a2333 100%);
+                background: #000000; /* Plain pitch black */
             }
         }
         /* Card background in dark theme */
@@ -31,10 +31,7 @@
             height: 3rem; /* h-12 */
             width: 3rem;  /* w-12 */
         }
-        .sda-logo-large {
-            height: 6rem; /* h-24 */
-            width: 6rem; /* w-24 */
-        }
+        /* DELETED the .sda-logo-large style rule */
 
         /* --- Animations --- */
         @keyframes fadeIn {
@@ -85,13 +82,14 @@
 
     </style>
 </head>
-<body class="bg-gray-900 text-slate-200 antialiased animate-fadeIn">
+<body class="bg-black text-slate-200 antialiased animate-fadeIn">
 
-    <!-- Header --><header class="bg-gray-950 shadow-lg sticky top-0 z-50">
+    <!-- Header --><header class="bg-black shadow-lg sticky top-0 z-50">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
             <!-- Logo and Company Name --><a href="#" class="flex items-center space-x-3">
-                <img src="image_5eaa87.png" alt="SDA Logo" class="sda-logo-small object-contain"
-                     onerror="this.src='https://github.com/apiiela/sdaproductionswa/blob/main/sdalogo.jpeg'; this.onerror=null;">
+                <!-- MODIFIED: Updated image src -->
+                <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/sdalogo.jpeg" alt="SDA Logo" class="sda-logo-small object-contain"
+                     onerror="this.src='https://placehold.co/100x100/334155/white?text=SDA'; this.onerror=null;">
                 <span class="text-xl font-bold text-slate-100">SDA Productions WA</span>
             </a>
             
@@ -147,37 +145,32 @@
                     </div>
                     
                     <!-- Right Column: Matilda Jr. Logo --><div class="md:w-1/2 mt-8 md:mt-0 animate-zoomIn delay-200">
-                        <!-- Corrected image path -->
-                        <img src="MATILDA JR_FULL_VERTICAL_4C.jpg" 
+                        <!-- MODIFIED: Updated image src -->
+                        <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/MATILDA%20JR_FULL_VERTICAL_4C.jpg" 
                              alt="Matilda The Musical Jr. Logo" 
                              class="rounded-lg shadow-2xl w-full max-w-md mx-auto"
-                             onerror="this.src='https://github.com/apiiela/sdaproductionswa/blob/main/MATILDA%20JR_FULL_VERTICAL_4C.jpg'; this.onerror=null;">
+                             onerror="this.src='https://placehold.co/600x750/334155/e0e7ff?text=Matilda+Jr.+Logo'; this.onerror=null;">
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- About SDA Section --><section id="about" class="py-16 md:py-24 bg-gray-800">
+        <!-- About SDA Section --><section id="about" class="py-16 md:py-24 bg-slate-800">
             <div class="container mx-auto px-6 text-center max-w-3xl">
-                <img src="image_5eaa87.png" alt="SDA Logo" class="sda-logo-large mx-auto mb-6 transition-transform duration-300 hover:rotate-6"
-                     onerror="this.src='https://github.com/apiiela/sdaproductionswa/blob/main/sdalogo.jpeg'; this.onerror=null;">
+                <!-- MODIFIED: Updated class to fix aspect ratio -->
+                <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/sdalogo.jpeg" alt="SDA Logo" class="h-24 w-auto object-contain mx-auto mb-6 transition-transform duration-300 hover:rotate-6"
+                     onerror="this.src='https://placehold.co/100x100/334155/white?text=SDA'; this.onerror=null;">
                 <h2 class="text-3xl font-bold text-white mb-4">About SDA Productions WA</h2>
                 <p class="text-lg text-slate-300 leading-relaxed">
-                    SDA Productions WA, home of Sing Dance Act, is a premier performing arts company in Western Australia. We are dedicated to nurturing talent and bringing spectacular, high-quality productions to the community.
+                    SDA Productions WA is committed to providing high-quality, affordable, and family-friendly theatre productions to the local community. We believe in creating a fun and positive environment, ensuring every cast member feels valued and supported. We are dedicated to helping each performer reach their potential, whether for recreation or to support their desire to pursue a career in the performing arts.
                 </p>
             </div>
         </section>
 
-        <!-- Student/Staff Portal Login --><section id="portal-login" class="py-16 md:py-24 bg-gray-900 border-t border-gray-700">
-            <!-- This section is now removed -->
-        </section>
-
-        <!-- Portal Content (Hidden) --><section id="portal-content" class="py-16 md:py-24 bg-gray-800 hidden">
-            <!-- This section is now removed -->
-        </section>
+        <!-- DELETING THE EMPTY SECTIONS THAT CAUSED THE GAP -->
     </main>
 
-    <!-- Footer --><footer id="contact" class="bg-gray-950 text-slate-400 py-16">
+    <!-- Footer --><footer id="contact" class="bg-black text-slate-400 py-16">
         <div class="container mx-auto px-6 text-center">
             <h3 class="text-2xl font-bold text-white mb-4">Get In Touch</h3>
             <p class="mb-8">Follow us on social media for the latest updates on auditions, enrolments, and shows!</p>
@@ -251,4 +244,10 @@
 
 </body>
 </html>
+
+
+
+
+
+
 
