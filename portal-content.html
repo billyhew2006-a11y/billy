@@ -3,297 +3,496 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SDA Portal</title>
-    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Inter font --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <title>SDA Portal - Content</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .forum-post { page-break-inside: avoid; break-inside: avoid; }
+    </style>
     
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        import { 
+            getFirestore, doc, setDoc, addDoc, updateDoc, deleteDoc, 
+            collection, onSnapshot, query, serverTimestamp, 
+            getDoc, getDocs, increment 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { 
+            getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
 
-        // --- Gatekeeper (Part 2) ---
-        // Get role from session storage
+        // --- Gatekeeper Script ---
+        // This MUST run before anything else
         const userRole = sessionStorage.getItem('userRole');
+        const username = sessionStorage.getItem('username');
         if (!userRole) {
-            // No role, user did not log in. Redirect to login.
+            console.warn("No user role found in session. Redirecting to login.");
             window.location.href = 'portal.html';
         } else {
-            // User is logged in, show the page content
-            // Need to wait for DOM to be loaded
-            document.addEventListener('DOMContentLoaded', () => {
-                document.getElementById('mainContent').classList.remove('hidden');
-                document.getElementById('userRoleDisplay').textContent = userRole === 'admin' ? 'Billy (Admin)' : 'Matilda (Viewer)';
-            });
+            console.log(`User role found: ${userRole}. Loading portal.`);
         }
+        // -------------------------
 
-        // --- Firebase Setup ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // This can stay
-        
-        // --- YOUR FIREBASE CONFIG ---
+        // --- Firebase Config ---
+        // User's provided Firebase config
         const firebaseConfig = {
-          apiKey: "AIzaSyCSNoTcrBdewkCjOdGoubaKkAo8ZYvUYj0",
-          authDomain: "sdaproductions-7f04d.firebaseapp.com",
-          projectId: "sdaproductions-7f04d",
-          // --- FIX: Corrected .firebasestorage.app to .appspot.com ---
-          storageBucket: "sdaproductions-7f04d.appspot.com",
-          messagingSenderId: "372864946667",
-          appId: "1:372864946667:web:ff348922a14a2a905009ae",
-          measurementId: "G-54XVLP85NJ"
+            apiKey: "AIzaSyCSNoTcrBdewkCjOdGoubaKkAo8ZYvUYj0",
+            authDomain: "sdaproductions-7f04d.firebaseapp.com",
+            projectId: "sdaproductions-7f04d",
+            storageBucket: "sdaproductions-7f04d.appspot.com", // Corrected .appspot.com
+            messagingSenderId: "372864946667",
+            appId: "1:372864946667:web:ff348922a14a2a905009ae",
+            measurementId: "G-54XVLP85NJ"
         };
         // ------------------------------------------------
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-        const analytics = getAnalytics(app);
-        setLogLevel('Debug');
+        // Initialize Firebase
+        let app, auth, db, storage;
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            storage = getStorage(app); // Initialize Storage
+            const analytics = getAnalytics(app);
+        } catch (error) {
+            console.error("Error initializing Firebase:", error);
+            document.body.innerHTML = `<div class="p-8 text-red-400">Error connecting to portal. Firebase config may be invalid. ${error.message}</div>`;
+        }
+        
+        // --- Global Variables ---
+        let currentUserId = null;
+        // This is the correct, 3-part path for your posts collection
+        const postsCollectionRef = collection(db, "portals/sda-portal/posts");
 
-        // --- Auth Listener ---
-        onAuthStateChanged(auth, async (user) => {
+        // --- Auth & Main App Logic ---
+        onAuthStateChanged(auth, (user) => {
             if (user) {
                 // User is signed in.
-                console.log('Firebase auth successful, user:', user.uid);
+                console.log("Firebase auth successful, user:", user.uid);
+                currentUserId = user.uid;
                 
-                // Now that we are authenticated, we can interact with Firestore.
-                setupForum(user.uid, userRole);
+                // User is authenticated, now load the app.
+                initializeAppUI(userRole, username); // Pass role and username
+                loadPosts(userRole); // Pass role to post loader
 
             } else {
-                // User is signed out. Try to sign in.
-                console.log('No user signed in, attempting anonymous auth...');
-                try {
-                    // On GitHub, we don't have a __initial_auth_token.
-                    // We will *only* use signInAnonymously.
-                    await signInAnonymously(auth);
-                    
-                } catch (error) {
+                // User is signed out. Attempt anonymous auth.
+                console.log("No user signed in, attempting anonymous auth...");
+                signInAnonymously(auth).catch((error) => {
                     console.error("Firebase sign-in error:", error);
-                    const postsList = document.getElementById('postsList');
-                    if (postsList) {
-                        postsList.innerHTML = '<p class="text-red-400">Error connecting to portal. Please try again.</p>';
-                    }
-                }
+                    document.getElementById('status-message').textContent = `Error connecting to portal. Please try again. ${error.message}`;
+                });
             }
         });
 
-        // --- Forum Logic ---
-        function setupForum(userId, role) {
-            // --- FIX: This path is now 3 segments (odd), which is a valid collection path ---
-            const postsColRef = collection(db, `portals/sda-portal/posts`);
-            const postForm = document.getElementById('postForm');
-            const postsList = document.getElementById('postsList');
-            const statusMessage = document.getElementById('statusMessage');
+        // --- UI Initialization ---
+        function initializeAppUI(role, loggedInUsername) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('portal-content').style.display = 'block';
+            document.getElementById('welcome-message').textContent = `Welcome, ${loggedInUsername}!`;
 
-            // 1. Show Admin Form if role is 'admin'
+            // Show admin-only UI
             if (role === 'admin') {
-                document.getElementById('adminForm').classList.remove('hidden');
+                document.getElementById('admin-post-form').style.display = 'block';
             }
 
-            // 2. Listen for new posts and display them
-            const q = query(postsColRef); // We will sort client-side
-            onSnapshot(q, (snapshot) => {
-                if (!postsList) return; // Ensure element exists
-                postsList.innerHTML = ''; // Clear list
-                if (snapshot.empty) {
-                    postsList.innerHTML = '<p class="text-slate-400">No posts yet. Admin can create the first post!</p>';
+            // --- Form Handlers ---
+            const postForm = document.getElementById('post-form');
+            const fileInput = document.getElementById('file-upload');
+            const statusMessage = document.getElementById('status-message');
+
+            postForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const postText = document.getElementById('post-text').value;
+                const file = fileInput.files[0];
+
+                if (!postText && !file) {
+                    statusMessage.textContent = 'Please write a post or upload a file.';
                     return;
                 }
-                
-                // Get and sort posts (newest first)
-                const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
-                posts.forEach(post => {
-                    const postEl = document.createElement('div');
-                    postEl.className = 'bg-slate-800 border border-slate-700 rounded-lg shadow-md p-6 animate-fadeIn';
-                    
-                    const postDate = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : 'Just now';
+                statusMessage.textContent = 'Posting...';
+                let fileUrl = null;
+                let fileName = null;
 
-                    let fileHtml = '';
-                    if (post.fileURL && post.fileName) {
-                        fileHtml = `
-                            <div class="mt-4 border-t border-slate-600 pt-4">
-                                <a href="${post.fileURL}" target="_blank" rel="noopener noreferrer"
-                                   class="inline-flex items-center space-x-2 text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    <span>Download: ${post.fileName}</span>
-                                </a>
-                            </div>
-                        `;
+                try {
+                    // 1. Upload file if it exists
+                    if (file) {
+                        statusMessage.textContent = 'Uploading file...';
+                        const storageRef = ref(storage, `forum-uploads/${Date.now()}_${file.name}`);
+                        const uploadTask = await uploadBytesResumable(storageRef, file);
+                        fileUrl = await getDownloadURL(uploadTask.ref);
+                        fileName = file.name;
+                        statusMessage.textContent = 'File uploaded. Posting...';
                     }
 
-                    postEl.innerHTML = `
-                        <p class="text-slate-300 whitespace-pre-wrap">${post.text}</p>
-                        ${fileHtml}
-                        <p class="text-xs text-slate-500 mt-4 text-right">Posted by ${post.author} on ${postDate}</p>
-                    `;
-                    postsList.appendChild(postEl);
+                    // 2. Add post to Firestore
+                    await addDoc(postsCollectionRef, {
+                        text: postText,
+                        fileUrl: fileUrl,
+                        fileName: fileName,
+                        createdAt: serverTimestamp(),
+                        likes: 0,
+                        author: loggedInUsername // Save who posted it
+                    });
+
+                    // 3. Reset form
+                    postForm.reset();
+                    statusMessage.textContent = 'Posted successfully!';
+                    setTimeout(() => statusMessage.textContent = '', 3000);
+
+                } catch (error) {
+                    console.error("Error creating post:", error);
+                    statusMessage.textContent = `Error posting: ${error.message}`;
+                }
+            });
+        }
+
+        // --- Load Posts ---
+        function loadPosts(currentUserRole) {
+            const postsContainer = document.getElementById('posts-container');
+            
+            // Listen for real-time updates
+            const q = query(postsCollectionRef); // We can add orderBy('createdAt', 'desc') later
+            onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    postsContainer.innerHTML = '<p class="text-slate-400">No posts yet. Be the first!</p>';
+                    return;
+                }
+
+                postsContainer.innerHTML = ''; // Clear old posts
+                snapshot.docs.forEach(postDoc => {
+                    const post = postDoc.data();
+                    const postId = postDoc.id;
+                    postsContainer.appendChild(createPostElement(postId, post, currentUserRole));
                 });
 
             }, (error) => {
-                console.error("Error fetching posts: ", error);
-                if (postsList) {
-                    postsList.innerHTML = '<p class="text-red-400">Error loading posts. Check console.</p>';
-                }
+                console.error("Error loading posts:", error);
+                postsContainer.innerHTML = `<p class="text-red-400">Error loading posts: ${error.message}</p>`;
             });
-
-            // 3. Handle Admin Post Submission
-            if (postForm) {
-                postForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const postText = document.getElementById('postText').value;
-                    const postFile = document.getElementById('postFile').files[0];
-                    const submitButton = postForm.querySelector('button[type="submit"]');
-
-                    if (!postText && !postFile) {
-                        // Use a custom modal or inline message instead of alert()
-                        statusMessage.textContent = 'Please add some text or a file to post.';
-                        statusMessage.classList.remove('hidden', 'text-green-400', 'text-yellow-400');
-                        statusMessage.classList.add('text-red-400');
-                        setTimeout(() => statusMessage.classList.add('hidden'), 3000);
-                        return;
-                    }
-
-                    submitButton.disabled = true;
-                    statusMessage.textContent = 'Uploading...';
-                    statusMessage.classList.remove('hidden', 'text-green-400', 'text-red-400');
-                    statusMessage.classList.add('text-yellow-400');
-
-                    let fileURL = null;
-                    let fileName = null;
-
-                    try {
-                        // Step A: Upload file if it exists
-                        if (postFile) {
-                            statusMessage.textContent = 'Uploading file...';
-                            const storageRef = ref(storage, `forum-uploads/${Date.now()}-${postFile.name}`);
-                            const uploadResult = await uploadBytes(storageRef, postFile);
-                            fileURL = await getDownloadURL(uploadResult.ref);
-                            fileName = postFile.name;
-                            statusMessage.textContent = 'File uploaded, saving post...';
-                        } else {
-                            statusMessage.textContent = 'Saving post...';
-                        }
-
-                        // Step B: Save post data (text and file URL) to Firestore
-                        const postObject = {
-                            text: postText,
-                            fileURL: fileURL,
-                            fileName: fileName,
-                            author: 'Billy (Admin)',
-                            createdAt: serverTimestamp()
-                        };
-                        
-                        await addDoc(postsColRef, postObject);
-
-                        // Step C: Reset form
-                        postForm.reset();
-                        statusMessage.textContent = 'Post successful!';
-                        statusMessage.classList.remove('text-yellow-400');
-                        statusMessage.classList.add('text-green-400');
-                        setTimeout(() => statusMessage.classList.add('hidden'), 3000);
-
-                    } catch (error) {
-                        console.error("Error creating post:", error);
-                        statusMessage.textContent = 'Error: ' + error.message;
-                        statusMessage.classList.remove('text-yellow-400');
-                        statusMessage.classList.add('text-red-400');
-                    } finally {
-                        submitButton.disabled = false;
-                    }
-                });
-            }
         }
 
-        // --- Logout Button ---
-        // Wait for DOM to load to add this listener
-        document.addEventListener('DOMContentLoaded', () => {
-            const logoutButton = document.getElementById('logoutButton');
-            if (logoutButton) {
-                logoutButton.addEventListener('click', () => {
-                    sessionStorage.removeItem('userRole'); // Clear the session
-                    window.location.href = 'index.html'; // Go back to home
+        // --- Create Post Element ---
+        function createPostElement(postId, post, currentUserRole) {
+            const postElement = document.createElement('div');
+            postElement.className = 'forum-post bg-gray-800 border border-slate-700 rounded-lg shadow-lg p-6 mb-6';
+            
+            const postDate = post.createdAt ? post.createdAt.toDate().toLocaleString() : 'Just now';
+            const author = post.author || 'Admin'; // Default to 'Admin' if author is missing
+            
+            // --- Delete Button (Admin Only) ---
+            let deleteButtonHtml = '';
+            if (currentUserRole === 'admin') {
+                deleteButtonHtml = `
+                    <button data-post-id="${postId}" data-file-url="${post.fileUrl || ''}" 
+                            class="delete-post-btn text-red-500 hover:text-red-400 text-sm font-medium">
+                        Delete Post
+                    </button>
+                `;
+            }
+
+            // --- Post Content ---
+            let fileHtml = '';
+            if (post.fileUrl) {
+                fileHtml = `
+                    <div class="mt-4 bg-gray-700 p-3 rounded-lg flex items-center justify-between">
+                        <span class="text-indigo-400">${post.fileName || 'Attached File'}</span>
+                        <a href="${post.fileUrl}" target="_blank" rel="noopener noreferrer" 
+                           class="text-sm bg-indigo-600 hover:bg-indigo-700 text-white py-1 px-3 rounded-md">
+                           Download
+                        </a>
+                    </div>
+                `;
+            }
+            
+            // --- Like Button ---
+            const likeId = `like-${postId}`;
+            const liked = localStorage.getItem(likeId) === 'true';
+            const likeButtonClass = liked ? 'bg-indigo-700' : 'bg-gray-600 hover:bg-gray-500';
+
+            // --- Main Post HTML ---
+            postElement.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-sm font-medium text-indigo-400">${author}</p>
+                    ${deleteButtonHtml}
+                </div>
+                <p class="text-slate-300 whitespace-pre-wrap">${post.text}</p>
+                ${fileHtml}
+                <div class="mt-4 pt-4 border-t border-slate-700 flex items-center justify-between">
+                    <button data-post-id="${postId}" 
+                            class="like-btn ${likeButtonClass} text-white py-1 px-3 rounded-md text-sm">
+                        Like (<span id="${likeId}">${post.likes || 0}</span>)
+                    </button>
+                    <span class="text-xs text-slate-500">${postDate}</span>
+                </div>
+                
+                <!-- Comments Section -->
+                <div class="mt-6">
+                    <h4 class="text-lg font-semibold text-slate-200 mb-3">Comments</h4>
+                    <!-- New Comment Form -->
+                    <form class="comment-form" data-post-id="${postId}">
+                        <textarea class="comment-text w-full bg-gray-700 border border-slate-600 rounded-md p-2 text-slate-200 text-sm" 
+                                  rows="2" placeholder="Write a comment..."></textarea>
+                        <button type="submit" 
+                                class="mt-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white py-1 px-3 rounded-md">
+                            Post Comment
+                        </button>
+                    </form>
+                    <!-- Comments List -->
+                    <div class="comments-container mt-4 space-y-3" id="comments-${postId}">
+                        <!-- Comments will be loaded here -->
+                    </div>
+                </div>
+            `;
+
+            // --- Load Comments for this Post ---
+            loadComments(postId, currentUserRole);
+
+            return postElement;
+        }
+        
+        // --- Load Comments ---
+        function loadComments(postId, currentUserRole) {
+            const commentsContainer = document.getElementById(`comments-${postId}`);
+            const commentsRef = collection(db, "portals/sda-portal/posts", postId, "comments");
+            const q = query(commentsRef); // Can add orderBy('createdAt', 'asc')
+            
+            onSnapshot(q, (snapshot) => {
+                commentsContainer.innerHTML = ''; // Clear old comments
+                if (snapshot.empty) {
+                    commentsContainer.innerHTML = '<p class="text-xs text-slate-500">No comments yet.</p>';
+                    return;
+                }
+                snapshot.docs.forEach(doc => {
+                    const comment = doc.data();
+                    const commentId = doc.id;
+                    commentsContainer.appendChild(createCommentElement(postId, commentId, comment, currentUserRole));
                 });
+            }, (error) => {
+                console.error("Error loading comments:", error);
+                commentsContainer.innerHTML = `<p class="text-red-400 text-xs">Error loading comments.</p>`;
+            });
+        }
+        
+        // --- Create Comment Element ---
+        function createCommentElement(postId, commentId, comment, currentUserRole) {
+            const commentElement = document.createElement('div');
+            commentElement.className = 'bg-gray-700 p-3 rounded-md';
+            
+            const commentDate = comment.createdAt ? comment.createdAt.toDate().toLocaleString() : 'Just now';
+            
+            // --- Delete Button (Admin Only) ---
+            let deleteButtonHtml = '';
+            if (currentUserRole === 'admin') {
+                deleteButtonHtml = `
+                    <button data-post-id="${postId}" data-comment-id="${commentId}"
+                            class="delete-comment-btn text-red-500 hover:text-red-400 text-xs font-medium">
+                        Delete
+                    </button>
+                `;
+            }
+
+            commentElement.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm font-semibold text-indigo-300">${comment.author || 'User'}</p>
+                        <p class="text-sm text-slate-300 mt-1">${comment.text}</p>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-2">
+                        ${deleteButtonHtml}
+                        <p class="text-xs text-slate-500 mt-1">${commentDate}</p>
+                    </div>
+                </div>
+            `;
+            return commentElement;
+        }
+
+        // --- Global Event Listeners (Event Delegation) ---
+        document.body.addEventListener('click', async (e) => {
+            
+            // --- Handle Like Button Clicks ---
+            if (e.target.classList.contains('like-btn')) {
+                const postId = e.target.dataset.postId;
+                const likeId = `like-${postId}`;
+                const postRef = doc(db, "portals/sda-portal/posts", postId);
+                
+                if (localStorage.getItem(likeId) !== 'true') {
+                    // Like the post
+                    localStorage.setItem(likeId, 'true');
+                    e.target.classList.remove('bg-gray-600', 'hover:bg-gray-500');
+                    e.target.classList.add('bg-indigo-700');
+                    await updateDoc(postRef, { likes: increment(1) });
+                } else {
+                    // Unlike the post
+                    localStorage.setItem(likeId, 'false');
+                    e.target.classList.remove('bg-indigo-700');
+                    e.target.classList.add('bg-gray-600', 'hover:bg-gray-500');
+                    await updateDoc(postRef, { likes: increment(-1) });
+                }
+            }
+
+            // --- Handle Delete Post Button Clicks ---
+            if (e.target.classList.contains('delete-post-btn')) {
+                const postId = e.target.dataset.postId;
+                const fileUrl = e.target.dataset.fileUrl;
+                
+                if (confirm('Are you sure you want to delete this entire post and all its comments?')) {
+                    await deletePost(postId, fileUrl);
+                }
+            }
+
+            // --- Handle Delete Comment Button Clicks ---
+            if (e.target.classList.contains('delete-comment-btn')) {
+                const postId = e.target.dataset.postId;
+                const commentId = e.target.dataset.commentId;
+                
+                if (confirm('Are you sure you want to delete this comment?')) {
+                    await deleteComment(postId, commentId);
+                }
             }
         });
 
-    </script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        /* Simple fade-in for posts */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-            animation: fadeIn 0.3s ease-out;
-        }
-    </style>
-</head>
-<body class="bg-black text-slate-200 antialiased min-h-screen">
+        // --- Handle Comment Form Submissions ---
+        document.body.addEventListener('submit', async (e) => {
+            if (e.target.classList.contains('comment-form')) {
+                e.preventDefault();
+                const postId = e.target.dataset.postId;
+                const textarea = e.target.querySelector('.comment-text');
+                const commentText = textarea.value;
 
-    <!-- Gatekeeper (Part 1): Hide content by default -->
-    <div id="mainContent" class="hidden">
+                if (!commentText.trim()) return;
+
+                const commentsRef = collection(db, "portals/sda-portal/posts", postId, "comments");
+                try {
+                    await addDoc(commentsRef, {
+                        text: commentText,
+                        author: username, // Use the username from session storage
+                        createdAt: serverTimestamp()
+                    });
+                    textarea.value = ''; // Clear textarea
+                } catch (error) {
+                    console.error("Error posting comment:", error);
+                    alert("Error posting comment: " + error.message);
+                }
+            }
+        });
+
+        // --- Admin Delete Functions ---
+
+        async function deleteComment(postId, commentId) {
+            try {
+                const commentRef = doc(db, "portals/sda-portal/posts", postId, "comments", commentId);
+                await deleteDoc(commentRef);
+                console.log("Comment deleted:", commentId);
+            } catch (error) {
+                console.error("Error deleting comment:", error);
+                alert("Error deleting comment: " + error.message);
+            }
+        }
+
+        async function deletePost(postId, fileUrl) {
+            try {
+                // 1. Delete all comments in the sub-collection
+                const commentsRef = collection(db, "portals/sda-portal/posts", postId, "comments");
+                const commentsSnapshot = await getDocs(commentsRef);
+                const deletePromises = [];
+                commentsSnapshot.forEach(doc => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+                console.log("All comments deleted for post:", postId);
+
+                // 2. Delete the file from Storage (if it exists)
+                if (fileUrl) {
+                    const fileRef = ref(storage, fileUrl);
+                    await deleteObject(fileRef);
+                    console.log("File deleted from storage:", fileUrl);
+                }
+
+                // 3. Delete the main post document
+                const postRef = doc(db, "portals/sda-portal/posts", postId);
+                await deleteDoc(postRef);
+                console.log("Post deleted:", postId);
+
+            } catch (error) {
+                console.error("Error deleting post:", error);
+                alert("Error deleting post: " + error.message);
+            }
+        }
+
+    </script>
+</head>
+<body class="bg-black text-slate-200 antialiased">
+
+    <!-- Loading State -->
+    <div id="loading-state" class="flex items-center justify-center min-h-screen">
+        <div class="text-center">
+            <p class="text-2xl font-semibold text-slate-300">Loading Portal...</p>
+            <p class="text-slate-400 mt-2">Please wait.</p>
+        </div>
+    </div>
+
+    <!-- Main Portal Content (Initially Hidden) -->
+    <div id="portal-content" style="display: none;">
         
-        <!-- Header Bar -->
-        <header class="bg-gray-900 border-b border-slate-800 shadow-lg sticky top-0 z-50">
+        <!-- Header -->
+        <header class="bg-gray-950 shadow-lg sticky top-0 z-50">
             <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
                 <a href="index.html" class="flex items-center space-x-3">
                     <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/sdalogo.jpeg" alt="SDA Logo" class="h-10 w-10 object-contain">
                     <span class="text-xl font-bold text-slate-100">SDA Portal</span>
                 </a>
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm text-slate-400">Logged in as: <strong id="userRoleDisplay" class="text-slate-100">...</strong></span>
-                    <button id="logoutButton" class="text-slate-300 hover:text-indigo-400 font-medium text-sm">Logout</button>
+                <div>
+                    <span id="welcome-message" class="text-slate-300">Welcome!</span>
+                    <a href="portal.html" onclick="sessionStorage.clear()" class="ml-4 text-indigo-400 hover:text-indigo-300 text-sm font-medium">
+                        Logout
+                    </a>
                 </div>
             </nav>
         </header>
 
-        <!-- Main Container -->
-        <main class="container mx-auto p-6 max-w-4xl">
-            <h1 class="text-3xl font-bold text-white mb-6">Matilda JR. Forum</h1>
+        <!-- Main Content Area -->
+        <main class="container mx-auto p-6 max-w-3xl">
 
-            <!-- Admin Post Form (Hidden by default) -->
-            <section id="adminForm" class="hidden mb-8">
-                <form id="postForm" class="bg-gray-900 border border-slate-800 rounded-lg p-6 space-y-4">
-                    <h2 class="text-xl font-semibold text-white">Create New Post</h2>
+            <!-- Admin-Only Post Form -->
+            <section id="admin-post-form" class="mb-8" style="display: none;">
+                <h2 class="text-2xl font-bold text-white mb-4">Create New Post</h2>
+                <form id="post-form" class="bg-gray-800 border border-slate-700 rounded-lg p-6 space-y-4">
+                    <textarea id="post-text" rows="4" 
+                              class="w-full bg-gray-700 border border-slate-600 rounded-md p-3 text-slate-200" 
+                              placeholder="What's on your mind?"></textarea>
+                    
                     <div>
-                        <label for="postText" class="block text-sm font-medium text-slate-300">Message</label>
-                        <textarea id="postText" rows="4" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                        <label for="file-upload" class="block text-sm font-medium text-slate-300">Attach File (Optional)</label>
+                        <input type="file" id="file-upload" 
+                               class="mt-1 block w-full text-sm text-slate-400
+                                      file:mr-4 file:py-2 file:px-4
+                                      file:rounded-md file:border-0
+                                      file:text-sm file:font-semibold
+                                      file:bg-indigo-600 file:text-white
+                                      hover:file:bg-indigo-700">
                     </div>
-                    <div>
-                        <label for="postFile" class="block text-sm font-medium text-slate-300">Upload File (Optional)</label>
-                        <input type="file" id="postFile" class="mt-1 block w-full text-sm text-slate-400
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-md file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-indigo-600 file:text-white
-                            hover:file:bg-indigo-700
-                            file:transition-colors file:cursor-pointer">
-                    </div>
+
                     <div class="flex items-center justify-between">
-                        <button type="submit"
-                                class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:bg-indigo-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-black">
-                            Post Update
+                        <button type="submit" 
+                                class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors duration-300">
+                            Post
                         </button>
-                        <span id="statusMessage" class="text-sm hidden"></span>
+                        <p id="status-message" class="text-sm text-yellow-400"></p>
                     </div>
                 </form>
             </section>
-
-            <!-- Posts List -->
-            <section id="postsSection">
-                <h2 class="text-2xl font-semibold text-white mb-4">Updates</h2>
-                <div id="postsList" class="space-y-6">
-                    <!-- Posts will be loaded here by JavaScript -->
-                    <p class="text-slate-400">Loading posts...</p>
-                </div>
+            
+            <!-- Posts Container -->
+            <section id="posts-container">
+                <!-- Posts will be loaded here by JavaScript -->
             </section>
 
         </main>
