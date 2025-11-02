@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDA Portal</title>
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        // --- FIX --- Removed setLogLevel from this line
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // --- FIX --- Added setLogLevel to this line
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // --- Gatekeeper (Part 2) ---
+        // Get role from session storage
+        const userRole = sessionStorage.getItem('userRole');
+        if (!userRole) {
+            // No role, user did not log in. Redirect to login.
+            window.location.href = 'portal.html';
+        } else {
+            // User is logged in, show the page content
+            // Need to wait for DOM to be loaded
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('mainContent').classList.remove('hidden');
+                document.getElementById('userRoleDisplay').textContent = userRole === 'admin' ? 'Billy (Admin)' : 'Matilda (Viewer)';
+            });
+        }
+
+        // --- Firebase Setup ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let firebaseConfig;
+        try {
+            firebaseConfig = JSON.parse(___firebase_config);
+        } catch (e) {
+            console.error("Firebase config is not available or invalid.");
+            firebaseConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" }; // Fallback
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        setLogLevel('Debug');
+
+        // --- Auth Listener ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // User is signed in.
+                console.log('Firebase auth successful, user:', user.uid);
+                
+                // Now that we are authenticated, we can interact with Firestore.
+                setupForum(user.uid, userRole);
+
+            } else {
+                // User is signed out. Try to sign in.
+                console.log('No user signed in, attempting auth...');
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Firebase sign-in error:", error);
+                    const postsList = document.getElementById('postsList');
+                    if (postsList) {
+                        postsList.innerHTML = '<p class="text-red-400">Error connecting to portal. Please try again.</p>';
+                    }
+                }
+            }
+        });
+
+        // --- Forum Logic ---
+        function setupForum(userId, role) {
+            const postsColRef = collection(db, `/artifacts/${appId}/public/data/forum-posts`);
+            const postForm = document.getElementById('postForm');
+            const postsList = document.getElementById('postsList');
+            const statusMessage = document.getElementById('statusMessage');
+
+            // 1. Show Admin Form if role is 'admin'
+            if (role === 'admin') {
+                document.getElementById('adminForm').classList.remove('hidden');
+            }
+
+            // 2. Listen for new posts and display them
+            const q = query(postsColRef); // We will sort client-side
+            onSnapshot(q, (snapshot) => {
+                if (!postsList) return; // Ensure element exists
+                postsList.innerHTML = ''; // Clear list
+                if (snapshot.empty) {
+                    postsList.innerHTML = '<p class="text-slate-400">No posts yet. Admin can create the first post!</p>';
+                    return;
+                }
+                
+                // Get and sort posts (newest first)
+                const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                posts.forEach(post => {
+                    const postEl = document.createElement('div');
+                    postEl.className = 'bg-slate-800 border border-slate-700 rounded-lg shadow-md p-6 animate-fadeIn';
+                    
+                    const postDate = post.createdAt ? new Date(post.createdAt.seconds * 1000).toLocaleString() : 'Just now';
+
+                    let fileHtml = '';
+                    if (post.fileURL && post.fileName) {
+                        fileHtml = `
+                            <div class="mt-4 border-t border-slate-600 pt-4">
+                                <a href="${post.fileURL}" target="_blank" rel="noopener noreferrer"
+                                   class="inline-flex items-center space-x-2 text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    <span>Download: ${post.fileName}</span>
+                                </a>
+                            </div>
+                        `;
+                    }
+
+                    postEl.innerHTML = `
+                        <p class="text-slate-300 whitespace-pre-wrap">${post.text}</p>
+                        ${fileHtml}
+                        <p class="text-xs text-slate-500 mt-4 text-right">Posted by ${post.author} on ${postDate}</p>
+                    `;
+                    postsList.appendChild(postEl);
+                });
+
+            }, (error) => {
+                console.error("Error fetching posts: ", error);
+                if (postsList) {
+                    postsList.innerHTML = '<p class="text-red-400">Error loading posts. Check console.</p>';
+                }
+            });
+
+            // 3. Handle Admin Post Submission
+            if (postForm) {
+                postForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const postText = document.getElementById('postText').value;
+                    const postFile = document.getElementById('postFile').files[0];
+                    const submitButton = postForm.querySelector('button[type="submit"]');
+
+                    if (!postText && !postFile) {
+                        // Use a custom modal or inline message instead of alert()
+                        statusMessage.textContent = 'Please add some text or a file to post.';
+                        statusMessage.classList.remove('hidden', 'text-green-400', 'text-yellow-400');
+                        statusMessage.classList.add('text-red-400');
+                        setTimeout(() => statusMessage.classList.add('hidden'), 3000);
+                        return;
+                    }
+
+                    submitButton.disabled = true;
+                    statusMessage.textContent = 'Uploading...';
+                    statusMessage.classList.remove('hidden', 'text-green-400', 'text-red-400');
+                    statusMessage.classList.add('text-yellow-400');
+
+                    let fileURL = null;
+                    let fileName = null;
+
+                    try {
+                        // Step A: Upload file if it exists
+                        if (postFile) {
+                            statusMessage.textContent = 'Uploading file...';
+                            const storageRef = ref(storage, `forum-uploads/${Date.now()}-${postFile.name}`);
+                            const uploadResult = await uploadBytes(storageRef, postFile);
+                            fileURL = await getDownloadURL(uploadResult.ref);
+                            fileName = postFile.name;
+                            statusMessage.textContent = 'File uploaded, saving post...';
+                        } else {
+                            statusMessage.textContent = 'Saving post...';
+                        }
+
+                        // Step B: Save post data (text and file URL) to Firestore
+                        const postObject = {
+                            text: postText,
+                            fileURL: fileURL,
+                            fileName: fileName,
+                            author: 'Billy (Admin)',
+                            createdAt: serverTimestamp()
+                        };
+                        
+                        await addDoc(postsColRef, postObject);
+
+                        // Step C: Reset form
+                        postForm.reset();
+                        statusMessage.textContent = 'Post successful!';
+                        statusMessage.classList.remove('text-yellow-400');
+                        statusMessage.classList.add('text-green-400');
+                        setTimeout(() => statusMessage.classList.add('hidden'), 3000);
+
+                    } catch (error) {
+                        console.error("Error creating post:", error);
+                        statusMessage.textContent = 'Error: ' + error.message;
+                        statusMessage.classList.remove('text-yellow-400');
+                        statusMessage.classList.add('text-red-400');
+                    } finally {
+                        submitButton.disabled = false;
+                    }
+                });
+            }
+        }
+
+        // --- Logout Button ---
+        // Wait for DOM to load to add this listener
+        document.addEventListener('DOMContentLoaded', () => {
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', () => {
+                    sessionStorage.removeItem('userRole'); // Clear the session
+                    window.location.href = 'index.html'; // Go back to home
+                });
+            }
+        });
+
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Simple fade-in for posts */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-black text-slate-200 antialiased min-h-screen">
+
+    <!-- Gatekeeper (Part 1): Hide content by default -->
+    <div id="mainContent" class="hidden">
+        
+        <!-- Header Bar -->
+        <header class="bg-gray-900 border-b border-slate-800 shadow-lg sticky top-0 z-50">
+            <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <a href="index.html" class="flex items-center space-x-3">
+                    <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/sdalogo.jpeg" alt="SDA Logo" class="h-10 w-10 object-contain">
+                    <span class="text-xl font-bold text-slate-100">SDA Portal</span>
+                </a>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-slate-400">Logged in as: <strong id="userRoleDisplay" class="text-slate-100">...</strong></span>
+                    <button id="logoutButton" class="text-slate-300 hover:text-indigo-400 font-medium text-sm">Logout</button>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Main Container -->
+        <main class="container mx-auto p-6 max-w-4xl">
+            <h1 class="text-3xl font-bold text-white mb-6">Matilda JR. Forum</h1>
+
+            <!-- Admin Post Form (Hidden by default) -->
+            <section id="adminForm" class="hidden mb-8">
+                <form id="postForm" class="bg-gray-900 border border-slate-800 rounded-lg p-6 space-y-4">
+                    <h2 class="text-xl font-semibold text-white">Create New Post</h2>
+                    <div>
+                        <label for="postText" class="block text-sm font-medium text-slate-300">Message</label>
+                        <textarea id="postText" rows="4" class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                    <div>
+                        <label for="postFile" class="block text-sm font-medium text-slate-300">Upload File (Optional)</label>
+                        <input type="file" id="postFile" class="mt-1 block w-full text-sm text-slate-400
+                            file:mr-4 file:py-2 file:px-4
+                            file:rounded-md file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-indigo-600 file:text-white
+                            hover:file:bg-indigo-700
+                            file:transition-colors file:cursor-pointer">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <button type="submit"
+                                class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:bg-indigo-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-black">
+                            Post Update
+                        </button>
+                        <span id="statusMessage" class="text-sm hidden"></span>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Posts List -->
+            <section id="postsSection">
+                <h2 class="text-2xl font-semibold text-white mb-4">Updates</h2>
+                <div id="postsList" class="space-y-6">
+                    <!-- Posts will be loaded here by JavaScript -->
+                    <p class="text-slate-400">Loading posts...</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+</body>
+</html>
+
