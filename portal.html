@@ -24,7 +24,8 @@
                 'tayla': { password: 'Newt2026', role: 'admin' },
                 'hayley': { password: 'Miracle3', role: 'admin' },
                 'jamie': { password: 'Revolting4', role: 'admin' },
-                'billy': { password: 'Admin', role: 'admin' }
+                'billy': { password: 'Admin', role: 'admin' },
+                'teststudent': { password: '2026', role: 'viewer' } // <-- Added new login
             };
             // ---------------------------
 
@@ -63,7 +64,7 @@
                     } else {
                         // --- FAILED: Wrong Username ---
                         statusMessage.textContent = 'Invalid username or password.';
-                        statusMessage.className = 'text-red-4D0 text-sm text-center';
+                        statusMessage.className = 'text-red-400 text-sm text-center';
                     }
                 });
             }
