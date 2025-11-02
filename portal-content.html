@@ -35,14 +35,13 @@
         // --- Firebase Setup ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // This can stay
         
-        // --- STEP 1: PASTE YOUR FIREBASE CONFIG HERE ---
-        // Go to your Firebase project > Project Settings > General > "Your apps" > Web app
-        // Find the "firebaseConfig" object and paste it here, replacing the demo one.
+        // --- YOUR FIREBASE CONFIG ---
         const firebaseConfig = {
           apiKey: "AIzaSyCSNoTcrBdewkCjOdGoubaKkAo8ZYvUYj0",
           authDomain: "sdaproductions-7f04d.firebaseapp.com",
           projectId: "sdaproductions-7f04d",
-          storageBucket: "sdaproductions-7f04d.firebasestorage.app",
+          // --- FIX: Corrected .firebasestorage.app to .appspot.com ---
+          storageBucket: "sdaproductions-7f04d.appspot.com",
           messagingSenderId: "372864946667",
           appId: "1:372864946667:web:ff348922a14a2a905009ae",
           measurementId: "G-54XVLP85NJ"
@@ -69,10 +68,8 @@
                 // User is signed out. Try to sign in.
                 console.log('No user signed in, attempting anonymous auth...');
                 try {
-                    // --- FIX ---
                     // On GitHub, we don't have a __initial_auth_token.
                     // We will *only* use signInAnonymously.
-                    // Make sure you have "Anonymous" auth enabled in your Firebase project!
                     await signInAnonymously(auth);
                     
                 } catch (error) {
@@ -87,10 +84,8 @@
 
         // --- Forum Logic ---
         function setupForum(userId, role) {
-            // --- FIX ---
-            // On GitHub, we don't have __app_id injected for the path.
-            // We'll use a hardcoded path. You can change "sda-portal" if you want.
-            const postsColRef = collection(db, `portals/sda-portal/public/forum-posts`);
+            // --- FIX: This path is now 3 segments (odd), which is a valid collection path ---
+            const postsColRef = collection(db, `portals/sda-portal/posts`);
             const postForm = document.getElementById('postForm');
             const postsList = document.getElementById('postsList');
             const statusMessage = document.getElementById('statusMessage');
