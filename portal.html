@@ -19,7 +19,6 @@
             const statusMessage = document.getElementById('statusMessage');
 
             // --- Define Valid Logins ---
-            // We'll store usernames (lowercase) and their corresponding passwords and roles.
             const validLogins = {
                 'izzi': { password: 'Trenchbull1', role: 'admin' },
                 'tayla': { password: 'Newt2026', role: 'admin' },
@@ -33,12 +32,13 @@
                 loginForm.addEventListener('submit', (e) => {
                     e.preventDefault();
                     
-                    const username = document.getElementById('username').value.toLowerCase(); // Convert to lowercase for matching
+                    const usernameInput = document.getElementById('username').value;
                     const password = document.getElementById('password').value;
+                    const usernameKey = usernameInput.toLowerCase(); // Key for matching
 
                     // 1. Check if username exists
-                    if (validLogins.hasOwnProperty(username)) {
-                        const userLogin = validLogins[username];
+                    if (validLogins.hasOwnProperty(usernameKey)) {
+                        const userLogin = validLogins[usernameKey];
 
                         // 2. Check if password matches
                         if (userLogin.password === password) {
@@ -46,9 +46,9 @@
                             statusMessage.textContent = 'Login successful! Redirecting...';
                             statusMessage.className = 'text-green-400 text-sm text-center';
                             
-                            // 3. Save the user's role to session storage
-                            // The portal-content.html page will read this to see who logged in.
+                            // 3. Save the user's role AND username to session storage
                             sessionStorage.setItem('userRole', userLogin.role);
+                            sessionStorage.setItem('username', usernameInput); // Save the original-case username
                             
                             // 4. Redirect to the portal
                             setTimeout(() => {
@@ -63,7 +63,7 @@
                     } else {
                         // --- FAILED: Wrong Username ---
                         statusMessage.textContent = 'Invalid username or password.';
-                        statusMessage.className = 'text-red-400 text-sm text-center';
+                        statusMessage.className = 'text-red-4D0 text-sm text-center';
                     }
                 });
             }
