@@ -72,8 +72,8 @@
 
         // --- Global Variables ---
         const userRole = sessionStorage.getItem('userRole');
-        const username = sessionStorage.getItem('username');
-        let currentUserId = null; // To store Firebase Auth user ID
+        const username = sessionStorage.getItem('username'); // This is our UNIQUE ID (e.g., "Billy", "Izzi")
+        let currentUserId = null; // This is the SHARED anonymous Firebase ID
         
         // --- UI Elements ---
         const welcomeMessage = document.getElementById('welcomeMessage');
@@ -101,7 +101,7 @@
                 if (user) {
                     // User is signed in.
                     console.log('Firebase auth successful, user:', user.uid);
-                    currentUserId = user.uid; // <-- STORE THE UNIQUE FIREBASE USER ID
+                    currentUserId = user.uid; // <-- This is our "key" to the database
                     // 3. Load forum posts
                     loadPosts();
                 } else {
@@ -109,7 +109,7 @@
                     console.log('No user signed in, attempting anonymous auth...');
                     try {
                         const userCredential = await signInAnonymously(auth);
-                        currentUserId = userCredential.user.uid; // <-- STORE THE UNIQUE FIREBASE USER ID
+                        currentUserId = userCredential.user.uid; // <-- Store the key
                         console.log('Anonymous sign-in successful:', currentUserId);
                         // 3. Load forum posts
                         loadPosts();
@@ -130,26 +130,37 @@
         // --- Dropbox Embed Helper Functions ---
 
         /**
-         * Converts a Dropbox share link to a direct renderable link.
+         * Converts a Dropbox share link to a direct streaming link.
          * from: https://www.dropbox.com/s/...?dl=0
-         * to:   https://www.dropbox.com/s/...?raw=1
+         * to:   https://dl.dropboxusercontent.com/s/...
          */
         function getDropboxEmbedLink(url) {
             if (!url) return null;
             
-            // If it's a standard share link, replace ?dl=0 with ?raw=1
-            if (url.includes("?dl=0")) {
-                return url.replace("?dl=0", "?raw=1");
+            try {
+                // Create a URL object to easily parse it
+                const urlObj = new URL(url);
+                
+                // Check if it's a standard Dropbox link
+                if (urlObj.hostname === 'www.dropbox.com') {
+                    // Change the hostname
+                    urlObj.hostname = 'dl.dropboxusercontent.com';
+                    // Remove any query parameters like ?dl=0
+                    urlObj.search = ''; 
+                    // Return the new URL string
+                    return urlObj.toString();
+                }
+                
+                // If it's already a dl.dropboxusercontent.com link, it's fine
+                if (urlObj.hostname === 'dl.dropboxusercontent.com') {
+                    return url;
+                }
+            } catch (e) {
+                console.error("Invalid URL for Dropbox embed:", e);
+                return url; // Fallback to the original URL
             }
-            // If it's already a raw link, it's good
-            if (url.includes("?raw=1")) {
-                return url;
-            }
-            // If it's a link with no params, add ?raw=1
-            if (url.includes("dropbox.com/") && !url.includes("?")) {
-                 return url + "?raw=1";
-            }
-            // Fallback for other links (like ?dl=1, which won't embed)
+            
+            // Fallback for any other URL format
             return url;
         }
 
@@ -226,7 +237,7 @@
                 // DO NOT clear the entire list. Process the changes one by one.
                 // postList.innerHTML = ''; // <-- THIS WAS THE BUG. IT'S GONE.
 
-                if (snapshot.empty) {
+                if (snapshot.empty && postList.innerHTML === '') {
                     postList.innerHTML = '<p class="text-slate-400 text-center">No announcements yet.</p>';
                     return;
                 }
@@ -237,6 +248,9 @@
                     const postElement = createPostElement(post, postId, change.type);
                     
                     if (change.type === "added") {
+                        // Remove "no posts" message if it exists
+                        const noPostsMsg = postList.querySelector('p');
+                        if (noPostsMsg) noPostsMsg.remove();
                         // Add new posts to the top
                         postList.prepend(postElement);
                     }
@@ -274,12 +288,12 @@
 
             const date = post.createdAt ? post.createdAt.toDate().toLocaleString('en-AU') : 'Just now';
 
-            // --- NEW LIKE LOGIC ---
-            // Stop using localStorage. Check if the database 'likedBy' array includes this user's ID.
-            const hasLiked = post.likedBy && post.likedBy.includes(currentUserId);
+            // --- ** LIKE FIX ** ---
+            // Check if the database 'likedBy' array includes this user's PORTAL USERNAME (e.g., "Billy")
+            const hasLiked = post.likedBy && post.likedBy.includes(username);
             // ---------------------
 
-            // Admin Delete Button - no longer needs data-file-path
+            // Admin Delete Button
             const deleteButtonHtml = userRole === 'admin' ? `
                 <button data-post-id="${postId}" class="delete-post-btn text-slate-500 hover:text-red-500 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -313,7 +327,7 @@
             `;
 
             // --- Add Event Listeners ---
-            // Like Button - No longer passes 'hasLiked'
+            // Like Button
             const likeBtn = postDiv.querySelector('.like-btn');
             if (likeBtn) {
                 likeBtn.addEventListener('click', () => handleLike(postId));
@@ -372,7 +386,9 @@
 
         // --- Handle Like (Completely new logic) ---
         async function handleLike(postId) {
-            if (!currentUserId) {
+            // --- ** LIKE FIX ** ---
+            // Use the portal 'username' (e.g., "Billy") as the unique ID, not the shared anonymous auth ID
+            if (!username) {
                 console.error("Not logged in, cannot like post.");
                 return;
             }
@@ -389,19 +405,22 @@
                 
                 const postData = postDoc.data();
                 const likedBy = postData.likedBy || [];
-                const hasLiked = likedBy.includes(currentUserId);
+                // Check using the portal 'username'
+                const hasLiked = likedBy.includes(username);
 
                 if (hasLiked) {
                     // --- USER WANTS TO UNLIKE ---
                     await updateDoc(postRef, {
                         likesCount: increment(-1),
-                        likedBy: arrayRemove(currentUserId)
+                        // Remove the portal 'username'
+                        likedBy: arrayRemove(username)
                     });
                 } else {
                     // --- USER WANTS TO LIKE ---
                     await updateDoc(postRef, {
                         likesCount: increment(1),
-                        likedBy: arrayUnion(currentUserId)
+                        // Add the portal 'username'
+                        likedBy: arrayUnion(username)
                     });
                 }
 
