@@ -47,9 +47,7 @@
             getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, 
             onSnapshot, collection, query, serverTimestamp, increment, deleteField 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { 
-            getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        // We no longer need the 'firebase/storage' imports
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
 
         // --- Your Firebase Config ---
@@ -57,7 +55,7 @@
           apiKey: "AIzaSyCSNoTcrBdewkCjOdGoubaKkAo8ZYvUYj0",
           authDomain: "sdaproductions-7f04d.firebaseapp.com",
           projectId: "sdaproductions-7f04d",
-          storageBucket: "sdaproductions-7f04d.appspot.com", // Corrected .appspot.com
+          storageBucket: "sdaproductions-7f04d.appspot.com", 
           messagingSenderId: "372864946667",
           appId: "1:372864946667:web:ff348922a14a2a905009ae",
           measurementId: "G-54XVLP85NJ"
@@ -68,7 +66,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
+        // We no longer need to initialize storage
         const analytics = getAnalytics(app);
 
         // --- Global Variables ---
@@ -81,8 +79,8 @@
         const adminControls = document.getElementById('adminControls');
         const postForm = document.getElementById('postForm');
         const postContent = document.getElementById('postContent');
-        const postFile = document.getElementById('postFile');
-        const uploadProgress = document.getElementById('uploadProgress');
+        const postLink = document.getElementById('postLink'); // Changed from postFile
+        // uploadProgress is no longer needed
         const postList = document.getElementById('postList');
         const loadingSpinner = document.getElementById('loadingSpinner');
         const statusMessage = document.getElementById('statusMessage');
@@ -134,7 +132,7 @@
 
             // Reference to the 'posts' collection
             const postsColRef = collection(db, "portals/sda-portal/posts");
-            const q = query(postsColRef); // We can add orderBy here later if needed
+            const q = query(postsColRef); 
 
             loadingSpinner.classList.remove('hidden');
 
@@ -185,32 +183,29 @@
             postDiv.id = `post-${postId}`;
             postDiv.className = 'bg-gray-900 border border-slate-800 shadow-xl rounded-lg overflow-hidden';
             
-            // Add animation for new posts
             if (changeType === "added") {
                 postDiv.classList.add('new-post-animation');
             }
 
-            // Format date
             const date = post.createdAt ? post.createdAt.toDate().toLocaleString('en-AU') : 'Just now';
 
-            // Check if user has liked this post (from localStorage)
             const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '{}');
             const hasLiked = likedPosts[postId] === true;
 
-            // Admin Delete Button
+            // Admin Delete Button - no longer needs data-file-path
             const deleteButtonHtml = userRole === 'admin' ? `
-                <button data-post-id="${postId}" data-file-path="${post.filePath || ''}" class="delete-post-btn text-slate-500 hover:text-red-500 transition-colors">
+                <button data-post-id="${postId}" class="delete-post-btn text-slate-500 hover:text-red-500 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 </button>
             ` : '';
 
-            // File Download Link
+            // File Download Link - now links directly to post.fileURL
             const fileLinkHtml = post.fileURL ? `
                 <div class="mt-4">
                     <a href="${post.fileURL}" target="_blank" 
                        class="inline-flex items-center space-x-2 text-indigo-400 hover:text-indigo-300 font-medium py-2 px-4 bg-indigo-900/50 rounded-lg transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        <span>${post.fileName || 'Download File'}</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        <span>View Dropbox File</span>
                     </a>
                 </div>
             ` : '';
@@ -244,7 +239,7 @@
             // Delete Button
             const deleteBtn = postDiv.querySelector('.delete-post-btn');
             if (deleteBtn) {
-                deleteBtn.addEventListener('click', () => handleDeletePost(postId, deleteBtn.dataset.filePath));
+                deleteBtn.addEventListener('click', () => handleDeletePost(postId));
             }
 
             return postDiv;
@@ -256,64 +251,31 @@
             if (!currentUserId || userRole !== 'admin') return;
 
             const content = postContent.value;
-            const file = postFile.files[0];
+            const fileURL = postLink.value; // Get the link from the text input
 
-            if (!content && !file) {
-                alert("You must include either text or a file.");
+            if (!content && !fileURL) {
+                alert("You must include either text or a Dropbox link.");
                 return;
             }
 
-            statusMessage.textContent = 'Uploading post...';
+            statusMessage.textContent = 'Creating post...';
             statusMessage.classList.remove('hidden');
-            uploadProgress.classList.remove('hidden');
-            uploadProgress.value = 0;
+            // No progress bar needed
 
             try {
-                let fileURL = null;
-                let filePath = null;
-                let fileName = null;
-
-                // 1. If file exists, upload it first
-                if (file) {
-                    filePath = `forum-uploads/${currentUserId}_${Date.now()}_${file.name}`;
-                    fileName = file.name;
-                    const fileRef = ref(storage, filePath);
-                    const uploadTask = uploadBytesResumable(fileRef, file);
-
-                    // Wait for upload to complete
-                    await new Promise((resolve, reject) => {
-                        uploadTask.on('state_changed',
-                            (snapshot) => {
-                                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                                uploadProgress.value = progress;
-                            },
-                            (error) => {
-                                console.error("Upload failed:", error);
-                                reject(error);
-                            },
-                            async () => {
-                                fileURL = await getDownloadURL(uploadTask.snapshot.ref);
-                                resolve();
-                            }
-                        );
-                    });
-                }
-
-                // 2. Add post document to Firestore
+                // 1. Add post document to Firestore
                 const postsColRef = collection(db, "portals/sda-portal/posts");
                 await addDoc(postsColRef, {
                     postedBy: username,
                     content: content,
                     createdAt: serverTimestamp(),
                     likes: 0,
-                    fileURL: fileURL,
-                    filePath: filePath,
-                    fileName: fileName
+                    fileURL: fileURL || null, // Save the link (or null)
+                    // filePath and fileName are no longer needed
                 });
 
-                // 3. Reset form and show success
+                // 2. Reset form and show success
                 postForm.reset();
-                uploadProgress.classList.add('hidden');
                 statusMessage.textContent = 'Post created successfully!';
                 setTimeout(() => statusMessage.classList.add('hidden'), 3000);
 
@@ -349,7 +311,7 @@
         }
 
         // --- Handle Delete Post ---
-        async function handleDeletePost(postId, filePath) {
+        async function handleDeletePost(postId) { // No longer needs filePath
             if (userRole !== 'admin') return;
 
             if (!confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
@@ -357,33 +319,15 @@
             }
 
             try {
-                // 1. Delete the file from Storage (if it exists)
-                if (filePath) {
-                    const fileRef = ref(storage, filePath);
-                    await deleteObject(fileRef);
-                    console.log("File deleted from storage.");
-                }
-
-                // 2. Delete the post from Firestore
+                // We no longer need to delete a file from Storage.
+                // Just delete the post from Firestore
                 const postRef = doc(db, "portals/sda-portal/posts", postId);
                 await deleteDoc(postRef);
                 console.log("Post deleted from Firestore.");
 
             } catch (error) {
                 console.error("Error deleting post:", error);
-                // Handle case where file doesn't exist (e.g., already deleted)
-                if (error.code === 'storage/object-not-found') {
-                    console.warn("File not found in storage, but deleting post doc anyway.");
-                    // Still try to delete the firestore doc
-                    try {
-                        const postRef = doc(db, "portals/sda-portal/posts", postId);
-                        await deleteDoc(postRef);
-                    } catch (dbError) {
-                        console.error("Error deleting post doc:", dbError);
-                    }
-                } else {
-                    alert("Error deleting post: " + error.message);
-                }
+                alert("Error deleting post: " + error.message);
             }
         }
 
@@ -419,18 +363,14 @@
                               class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                 </div>
                 <div>
-                    <label for="postFile" class="block text-sm font-medium text-slate-300">Attach File (Optional)</label>
-                    <input type="file" id="postFile" 
-                           class="mt-1 block w-full text-sm text-slate-400
-                                  file:mr-4 file:py-2 file:px-4
-                                  file:rounded-md file:border-0
-                                  file:text-sm file:font-semibold
-                                  file:bg-indigo-600 file:text-white
-                                  hover:file:bg-indigo-700
-                                  cursor-pointer">
+                    <!-- This is the changed part -->
+                    <label for="postLink" class="block text-sm font-medium text-slate-300">Dropbox Link (Optional)</label>
+                    <input type="text" id="postLink" 
+                           placeholder="Paste your Dropbox 'Share' link here..."
+                           class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
                 
-                <progress id="uploadProgress" value="0" max="100" class="w-full hidden [&::-webkit-progress-bar]:rounded-lg [&::-webkit-progress-value]:rounded-lg [&::-webkit-progress-bar]:bg-slate-700 [&::-webkit-progress-value]:bg-indigo-500"></progress>
+                <!-- Progress bar is removed -->
 
                 <button type="submit" 
                         class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-indigo-500 transition-colors duration-200">
@@ -459,33 +399,7 @@
 
             <!-- List of posts will be injected here by JS -->
             <div id="postList" class="space-y-6">
-                <!-- Post Element Structure (Example)
-                <div class="bg-gray-900 border border-slate-800 shadow-xl rounded-lg overflow-hidden">
-                    <div class="p-6">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm text-slate-400">Posted by Billy on 2/11/2025</p>
-                            </div>
-                            <button class="text-slate-500 hover:text-red-500 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
-                        </div>
-                        <p class="text-lg text-slate-100 whitespace-pre-wrap mt-4 mb-5">This is a sample post...</p>
-                        <div class="mt-4">
-                            <a href="#" target="_blank" class="inline-flex items-center space-x-2 text-indigo-400 hover:text-indigo-300 font-medium py-2 px-4 bg-indigo-900/50 rounded-lg transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                <span>Sheet_Music.pdf</span>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="bg-gray-950/50 border-t border-slate-800 px-6 py-4">
-                        <button class="flex items-center space-x-2 text-slate-400 hover:text-red-500 transition-colors">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 20.25l-7.682-7.682a4.5 4.5 0 010-6.364z"></path></svg>
-                            <span class="font-medium">0</span>
-                        </button>
-                    </div>
-                </div>
-                -->
+                <!-- Posts will be generated by JS -->
             </div>
         </section>
 
