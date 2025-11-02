@@ -12,9 +12,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // --- FIX --- Removed setLogLevel from this line
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // --- FIX --- Added setLogLevel to this line
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
@@ -34,15 +32,20 @@
         }
 
         // --- Firebase Setup ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        let firebaseConfig;
-        try {
-            // --- FIX --- Changed from ___firebase_config (three) to __firebase_config (two)
-            firebaseConfig = JSON.parse(__firebase_config);
-        } catch (e) {
-            console.error("Firebase config is not available or invalid.");
-            firebaseConfig = { apiKey: "demo", authDomain: "demo.firebaseapp.com", projectId: "demo" }; // Fallback
-        }
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // This can stay
+        
+        // --- STEP 1: PASTE YOUR FIREBASE CONFIG HERE ---
+        // Go to your Firebase project > Project Settings > General > "Your apps" > Web app
+        // Find the "firebaseConfig" object and paste it here, replacing the demo one.
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // ------------------------------------------------
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -61,13 +64,14 @@
 
             } else {
                 // User is signed out. Try to sign in.
-                console.log('No user signed in, attempting auth...');
+                console.log('No user signed in, attempting anonymous auth...');
                 try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    // --- FIX ---
+                    // On GitHub, we don't have a __initial_auth_token.
+                    // We will *only* use signInAnonymously.
+                    // Make sure you have "Anonymous" auth enabled in your Firebase project!
+                    await signInAnonymously(auth);
+                    
                 } catch (error) {
                     console.error("Firebase sign-in error:", error);
                     const postsList = document.getElementById('postsList');
@@ -80,7 +84,10 @@
 
         // --- Forum Logic ---
         function setupForum(userId, role) {
-            const postsColRef = collection(db, `/artifacts/${appId}/public/data/forum-posts`);
+            // --- FIX ---
+            // On GitHub, we don't have __app_id injected for the path.
+            // We'll use a hardcoded path. You can change "sda-portal" if you want.
+            const postsColRef = collection(db, `portals/sda-portal/public/forum-posts`);
             const postForm = document.getElementById('postForm');
             const postsList = document.getElementById('postsList');
             const statusMessage = document.getElementById('statusMessage');
