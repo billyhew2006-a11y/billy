@@ -28,7 +28,6 @@
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
 
         // --- Gatekeeper Script ---
-        // This MUST run before anything else
         const userRole = sessionStorage.getItem('userRole');
         const username = sessionStorage.getItem('username');
         if (!userRole) {
@@ -40,12 +39,11 @@
         // -------------------------
 
         // --- Firebase Config ---
-        // User's provided Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyCSNoTcrBdewkCjOdGoubaKkAo8ZYvUYj0",
             authDomain: "sdaproductions-7f04d.firebaseapp.com",
             projectId: "sdaproductions-7f04d",
-            storageBucket: "sdaproductions-7f04d.appspot.com", // Corrected .appspot.com
+            storageBucket: "sdaproductions-7f04d.appspot.com",
             messagingSenderId: "372864946667",
             appId: "1:372864946667:web:ff348922a14a2a905009ae",
             measurementId: "G-54XVLP85NJ"
@@ -58,7 +56,7 @@
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-            storage = getStorage(app); // Initialize Storage
+            storage = getStorage(app);
             const analytics = getAnalytics(app);
         } catch (error) {
             console.error("Error initializing Firebase:", error);
@@ -67,22 +65,16 @@
         
         // --- Global Variables ---
         let currentUserId = null;
-        // This is the correct, 3-part path for your posts collection
         const postsCollectionRef = collection(db, "portals/sda-portal/posts");
 
         // --- Auth & Main App Logic ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // User is signed in.
                 console.log("Firebase auth successful, user:", user.uid);
                 currentUserId = user.uid;
-                
-                // User is authenticated, now load the app.
-                initializeAppUI(userRole, username); // Pass role and username
-                loadPosts(userRole); // Pass role to post loader
-
+                initializeAppUI(userRole, username);
+                loadPosts(userRole);
             } else {
-                // User is signed out. Attempt anonymous auth.
                 console.log("No user signed in, attempting anonymous auth...");
                 signInAnonymously(auth).catch((error) => {
                     console.error("Firebase sign-in error:", error);
@@ -97,12 +89,10 @@
             document.getElementById('portal-content').style.display = 'block';
             document.getElementById('welcome-message').textContent = `Welcome, ${loggedInUsername}!`;
 
-            // Show admin-only UI
             if (role === 'admin') {
                 document.getElementById('admin-post-form').style.display = 'block';
             }
 
-            // --- Form Handlers ---
             const postForm = document.getElementById('post-form');
             const fileInput = document.getElementById('file-upload');
             const statusMessage = document.getElementById('status-message');
@@ -122,7 +112,6 @@
                 let fileName = null;
 
                 try {
-                    // 1. Upload file if it exists
                     if (file) {
                         statusMessage.textContent = 'Uploading file...';
                         const storageRef = ref(storage, `forum-uploads/${Date.now()}_${file.name}`);
@@ -132,17 +121,15 @@
                         statusMessage.textContent = 'File uploaded. Posting...';
                     }
 
-                    // 2. Add post to Firestore
                     await addDoc(postsCollectionRef, {
                         text: postText,
                         fileUrl: fileUrl,
                         fileName: fileName,
                         createdAt: serverTimestamp(),
                         likes: 0,
-                        author: loggedInUsername // Save who posted it
+                        author: loggedInUsername
                     });
 
-                    // 3. Reset form
                     postForm.reset();
                     statusMessage.textContent = 'Posted successfully!';
                     setTimeout(() => statusMessage.textContent = '', 3000);
@@ -158,15 +145,14 @@
         function loadPosts(currentUserRole) {
             const postsContainer = document.getElementById('posts-container');
             
-            // Listen for real-time updates
-            const q = query(postsCollectionRef); // We can add orderBy('createdAt', 'desc') later
+            const q = query(postsCollectionRef); // You can add orderBy('createdAt', 'desc') here
             onSnapshot(q, (snapshot) => {
                 if (snapshot.empty) {
                     postsContainer.innerHTML = '<p class="text-slate-400">No posts yet. Be the first!</p>';
                     return;
                 }
 
-                postsContainer.innerHTML = ''; // Clear old posts
+                postsContainer.innerHTML = '';
                 snapshot.docs.forEach(postDoc => {
                     const post = postDoc.data();
                     const postId = postDoc.id;
@@ -185,9 +171,8 @@
             postElement.className = 'forum-post bg-gray-800 border border-slate-700 rounded-lg shadow-lg p-6 mb-6';
             
             const postDate = post.createdAt ? post.createdAt.toDate().toLocaleString() : 'Just now';
-            const author = post.author || 'Admin'; // Default to 'Admin' if author is missing
+            const author = post.author || 'Admin';
             
-            // --- Delete Button (Admin Only) ---
             let deleteButtonHtml = '';
             if (currentUserRole === 'admin') {
                 deleteButtonHtml = `
@@ -198,7 +183,6 @@
                 `;
             }
 
-            // --- Post Content ---
             let fileHtml = '';
             if (post.fileUrl) {
                 fileHtml = `
@@ -212,12 +196,10 @@
                 `;
             }
             
-            // --- Like Button ---
             const likeId = `like-${postId}`;
             const liked = localStorage.getItem(likeId) === 'true';
             const likeButtonClass = liked ? 'bg-indigo-700' : 'bg-gray-600 hover:bg-gray-500';
 
-            // --- Main Post HTML ---
             postElement.innerHTML = `
                 <div class="flex justify-between items-center mb-2">
                     <p class="text-sm font-medium text-indigo-400">${author}</p>
@@ -232,86 +214,9 @@
                     </button>
                     <span class="text-xs text-slate-500">${postDate}</span>
                 </div>
-                
-                <!-- Comments Section -->
-                <div class="mt-6">
-                    <h4 class="text-lg font-semibold text-slate-200 mb-3">Comments</h4>
-                    <!-- New Comment Form -->
-                    <form class="comment-form" data-post-id="${postId}">
-                        <textarea class="comment-text w-full bg-gray-700 border border-slate-600 rounded-md p-2 text-slate-200 text-sm" 
-                                  rows="2" placeholder="Write a comment..."></textarea>
-                        <button type="submit" 
-                                class="mt-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white py-1 px-3 rounded-md">
-                            Post Comment
-                        </button>
-                    </form>
-                    <!-- Comments List -->
-                    <div class="comments-container mt-4 space-y-3" id="comments-${postId}">
-                        <!-- Comments will be loaded here -->
-                    </div>
-                </div>
             `;
-
-            // --- Load Comments for this Post ---
-            loadComments(postId, currentUserRole);
-
+            
             return postElement;
-        }
-        
-        // --- Load Comments ---
-        function loadComments(postId, currentUserRole) {
-            const commentsContainer = document.getElementById(`comments-${postId}`);
-            const commentsRef = collection(db, "portals/sda-portal/posts", postId, "comments");
-            const q = query(commentsRef); // Can add orderBy('createdAt', 'asc')
-            
-            onSnapshot(q, (snapshot) => {
-                commentsContainer.innerHTML = ''; // Clear old comments
-                if (snapshot.empty) {
-                    commentsContainer.innerHTML = '<p class="text-xs text-slate-500">No comments yet.</p>';
-                    return;
-                }
-                snapshot.docs.forEach(doc => {
-                    const comment = doc.data();
-                    const commentId = doc.id;
-                    commentsContainer.appendChild(createCommentElement(postId, commentId, comment, currentUserRole));
-                });
-            }, (error) => {
-                console.error("Error loading comments:", error);
-                commentsContainer.innerHTML = `<p class="text-red-400 text-xs">Error loading comments.</p>`;
-            });
-        }
-        
-        // --- Create Comment Element ---
-        function createCommentElement(postId, commentId, comment, currentUserRole) {
-            const commentElement = document.createElement('div');
-            commentElement.className = 'bg-gray-700 p-3 rounded-md';
-            
-            const commentDate = comment.createdAt ? comment.createdAt.toDate().toLocaleString() : 'Just now';
-            
-            // --- Delete Button (Admin Only) ---
-            let deleteButtonHtml = '';
-            if (currentUserRole === 'admin') {
-                deleteButtonHtml = `
-                    <button data-post-id="${postId}" data-comment-id="${commentId}"
-                            class="delete-comment-btn text-red-500 hover:text-red-400 text-xs font-medium">
-                        Delete
-                    </button>
-                `;
-            }
-
-            commentElement.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-sm font-semibold text-indigo-300">${comment.author || 'User'}</p>
-                        <p class="text-sm text-slate-300 mt-1">${comment.text}</p>
-                    </div>
-                    <div class="text-right flex-shrink-0 ml-2">
-                        ${deleteButtonHtml}
-                        <p class="text-xs text-slate-500 mt-1">${commentDate}</p>
-                    </div>
-                </div>
-            `;
-            return commentElement;
         }
 
         // --- Global Event Listeners (Event Delegation) ---
@@ -343,80 +248,23 @@
                 const postId = e.target.dataset.postId;
                 const fileUrl = e.target.dataset.fileUrl;
                 
-                if (confirm('Are you sure you want to delete this entire post and all its comments?')) {
+                if (confirm('Are you sure you want to delete this post?')) {
                     await deletePost(postId, fileUrl);
                 }
             }
-
-            // --- Handle Delete Comment Button Clicks ---
-            if (e.target.classList.contains('delete-comment-btn')) {
-                const postId = e.target.dataset.postId;
-                const commentId = e.target.dataset.commentId;
-                
-                if (confirm('Are you sure you want to delete this comment?')) {
-                    await deleteComment(postId, commentId);
-                }
-            }
         });
 
-        // --- Handle Comment Form Submissions ---
-        document.body.addEventListener('submit', async (e) => {
-            if (e.target.classList.contains('comment-form')) {
-                e.preventDefault();
-                const postId = e.target.dataset.postId;
-                const textarea = e.target.querySelector('.comment-text');
-                const commentText = textarea.value;
-
-                if (!commentText.trim()) return;
-
-                const commentsRef = collection(db, "portals/sda-portal/posts", postId, "comments");
-                try {
-                    await addDoc(commentsRef, {
-                        text: commentText,
-                        author: username, // Use the username from session storage
-                        createdAt: serverTimestamp()
-                    });
-                    textarea.value = ''; // Clear textarea
-                } catch (error) {
-                    console.error("Error posting comment:", error);
-                    alert("Error posting comment: " + error.message);
-                }
-            }
-        });
-
-        // --- Admin Delete Functions ---
-
-        async function deleteComment(postId, commentId) {
-            try {
-                const commentRef = doc(db, "portals/sda-portal/posts", postId, "comments", commentId);
-                await deleteDoc(commentRef);
-                console.log("Comment deleted:", commentId);
-            } catch (error) {
-                console.error("Error deleting comment:", error);
-                alert("Error deleting comment: " + error.message);
-            }
-        }
-
+        // --- Admin Delete Function ---
         async function deletePost(postId, fileUrl) {
             try {
-                // 1. Delete all comments in the sub-collection
-                const commentsRef = collection(db, "portals/sda-portal/posts", postId, "comments");
-                const commentsSnapshot = await getDocs(commentsRef);
-                const deletePromises = [];
-                commentsSnapshot.forEach(doc => {
-                    deletePromises.push(deleteDoc(doc.ref));
-                });
-                await Promise.all(deletePromises);
-                console.log("All comments deleted for post:", postId);
-
-                // 2. Delete the file from Storage (if it exists)
+                // 1. Delete the file from Storage (if it exists)
                 if (fileUrl) {
                     const fileRef = ref(storage, fileUrl);
                     await deleteObject(fileRef);
                     console.log("File deleted from storage:", fileUrl);
                 }
 
-                // 3. Delete the main post document
+                // 2. Delete the main post document
                 const postRef = doc(db, "portals/sda-portal/posts", postId);
                 await deleteDoc(postRef);
                 console.log("Post deleted:", postId);
