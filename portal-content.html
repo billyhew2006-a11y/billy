@@ -127,93 +127,81 @@
             }
         });
 
-        // --- Dropbox Embed Helper Functions ---
+        // --- Google Drive Embed Helper Functions ---
 
         /**
-         * Converts a Dropbox share link to a direct streaming link.
-         * from: https://www.dropbox.com/s/...?dl=0
-         * to:   https://dl.dropboxusercontent.com/s/...
+         * Extracts the Google Drive File ID from a shareable link.
+         * e.g., from: https://drive.google.com/file/d/FILE_ID_HERE/view
+         * or from: https://drive.google.com/open?id=FILE_ID_HERE
          */
-        function getDropboxEmbedLink(url) {
-            if (!url) return null;
-            
-            try {
-                // Create a URL object to easily parse it
-                const urlObj = new URL(url);
-                
-                // Check if it's a standard Dropbox link
-                if (urlObj.hostname === 'www.dropbox.com') {
-                    // Change the hostname
-                    urlObj.hostname = 'dl.dropboxusercontent.com';
-                    // Remove any query parameters like ?dl=0
-                    urlObj.search = ''; 
-                    // Return the new URL string
-                    return urlObj.toString();
-                }
-                
-                // If it's already a dl.dropboxusercontent.com link, it's fine
-                if (urlObj.hostname === 'dl.dropboxusercontent.com') {
-                    return url;
-                }
-            } catch (e) {
-                console.error("Invalid URL for Dropbox embed:", e);
-                return url; // Fallback to the original URL
+        function getDriveFileId(url) {
+            if (!url || typeof url !== 'string') return null;
+
+            // Pattern for standard /file/d/ID/view links
+            let match = url.match(/file\/d\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                return match[1];
             }
-            
-            // Fallback for any other URL format
-            return url;
+
+            // Pattern for old /open?id=ID links
+            match = url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                return match[1];
+            }
+
+            return null;
         }
 
         /**
-         * Generates the correct HTML for video, audio, or a generic link.
+         * Generates the correct HTML for video, audio, or a generic download link.
          */
         function generateEmbedHTML(fileURL) {
-            // Use the original URL for the generic link
-            const genericURL = fileURL;
-            // Get the modified URL for embedding media
-            const embedURL = getDropboxEmbedLink(fileURL);
+            const fileId = getDriveFileId(fileURL);
+            if (!fileId) return ''; // Not a recognized Drive link
 
-            if (!embedURL) return '';
+            const lowerURL = fileURL.toLowerCase();
 
-            const lowerURL = embedURL.toLowerCase();
-
-            // Video
-            if (lowerURL.includes('.mp4') || lowerURL.includes('.webm') || lowerURL.includes('.mov')) {
-                let mimeType = 'video/mp4';
-                if (lowerURL.includes('.webm')) mimeType = 'video/webm';
-                if (lowerURL.includes('.mov')) mimeType = 'video/quicktime';
+            // Check for common video file types in the link to decide on the embed type
+            const isVideo = lowerURL.includes('.mp4') || lowerURL.includes('.webm') || lowerURL.includes('.mov');
+            const isAudio = lowerURL.includes('.mp3') || lowerURL.includes('.wav') || lowerURL.includes('.ogg');
+            
+            // --- Video/Document Embed (using iframe) ---
+            if (isVideo || lowerURL.includes('document') || lowerURL.includes('spreadsheet') || lowerURL.includes('presentation')) {
+                const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                
                 return `
-                <div class="mt-4">
-                    <video controls class="w-full rounded-lg" style="max-height: 400px; background-color: #000;">
-                      <source src="${embedURL}" type="${mimeType}">
-                      Your browser does not support the video tag.
-                    </video>
+                <div class="mt-4 rounded-lg overflow-hidden shadow-2xl" style="position: relative; padding-bottom: 56.25%; height: 0;">
+                    <iframe src="${embedUrl}" 
+                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+                            frameborder="0" allowfullscreen></iframe>
                 </div>
                 `;
             }
 
-            // Audio
-            if (lowerURL.includes('.mp3') || lowerURL.includes('.wav') || lowerURL.includes('.ogg')) {
-                let mimeType = 'audio/mpeg';
-                if (lowerURL.includes('.wav')) mimeType = 'audio/wav';
-                if (lowerURL.includes('.ogg')) mimeType = 'audio/ogg';
+            // --- Audio Embed (uses direct download link for HTML5 player) ---
+            // Note: Google Drive audio is complex. The direct download method is most reliable.
+            if (isAudio) {
+                const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+                let mimeType = 'audio/mpeg'; // Defaulting to mpeg for simplicity
+
                 return `
                 <div class="mt-4">
-                    <audio controls class="w-full">
-                      <source src="${embedURL}" type="${mimeType}">
-                      Your browser does not support the audio tag.
+                    <audio controls class="w-full bg-gray-950/50 p-3 rounded-lg">
+                      <source src="${downloadUrl}" type="${mimeType}">
+                      Your browser does not support the audio element. <a href="${downloadUrl}" target="_blank" class="text-indigo-400">Download Audio</a>
                     </audio>
                 </div>
                 `;
             }
             
-            // Generic Link (if fileURL exists but isn't media)
+            // --- Generic Download Link ---
+            const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
             return `
                 <div class="mt-4">
-                    <a href="${genericURL}" target="_blank" 
+                    <a href="${downloadUrl}" target="_blank" 
                        class="inline-flex items-center space-x-2 text-indigo-400 hover:text-indigo-300 font-medium py-2 px-4 bg-indigo-900/50 rounded-lg transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                        <span>View Dropbox File</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span>Download Google Drive File</span>
                     </a>
                 </div>
             `;
@@ -233,10 +221,6 @@
             onSnapshot(q, (snapshot) => {
                 loadingSpinner.classList.add('hidden');
                 
-                // ** BUG FIX **
-                // DO NOT clear the entire list. Process the changes one by one.
-                // postList.innerHTML = ''; // <-- THIS WAS THE BUG. IT'S GONE.
-
                 if (snapshot.empty && postList.innerHTML === '') {
                     postList.innerHTML = '<p class="text-slate-400 text-center">No announcements yet.</p>';
                     return;
@@ -288,10 +272,8 @@
 
             const date = post.createdAt ? post.createdAt.toDate().toLocaleString('en-AU') : 'Just now';
 
-            // --- ** LIKE FIX ** ---
-            // Check if the database 'likedBy' array includes this user's PORTAL USERNAME (e.g., "Billy")
+            // Check if the database 'likedBy' array includes this user's PORTAL USERNAME
             const hasLiked = post.likedBy && post.likedBy.includes(username);
-            // ---------------------
 
             // Admin Delete Button
             const deleteButtonHtml = userRole === 'admin' ? `
@@ -300,10 +282,8 @@
                 </button>
             ` : '';
 
-            // --- NEW EMBED LOGIC ---
-            // Generate the media/link HTML
+            // Generate the media/link HTML (Google Drive version)
             const fileLinkHtml = generateEmbedHTML(post.fileURL);
-            // ---------------------
 
             postDiv.innerHTML = `
                 <div class="p-6">
@@ -320,19 +300,16 @@
                 <div class="bg-gray-950/50 border-t border-slate-800 px-6 py-4">
                     <button data-post-id="${postId}" class="like-btn flex items-center space-x-2 text-slate-400 hover:text-red-500 transition-colors ${hasLiked ? 'text-red-500' : ''}">
                         <svg class="w-6 h-6" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 20.25l-7.682-7.682a4.5 4.5 0 010-6.364z"></path></svg>
-                        <!-- Use new 'likesCount' field -->
                         <span class="font-medium">${post.likesCount || 0}</span>
                     </button>
                 </div>
             `;
 
             // --- Add Event Listeners ---
-            // Like Button
             const likeBtn = postDiv.querySelector('.like-btn');
             if (likeBtn) {
                 likeBtn.addEventListener('click', () => handleLike(postId));
             }
-            // Delete Button
             const deleteBtn = postDiv.querySelector('.delete-post-btn');
             if (deleteBtn) {
                 deleteBtn.addEventListener('click', () => handleDeletePost(postId));
@@ -350,13 +327,20 @@
             const fileURL = postLink.value; // Get the link from the text input
 
             if (!content && !fileURL) {
-                alert("You must include either text or a Dropbox link.");
+                alert("You must include either text or a Google Drive link.");
                 return;
             }
+            
+            // Optional validation for Google Drive link
+            if (fileURL && !getDriveFileId(fileURL)) {
+                if (!confirm("The link doesn't look like a standard Google Drive share link (missing 'id=' or '/file/d/'). Are you sure you want to proceed?")) {
+                    return;
+                }
+            }
+
 
             statusMessage.textContent = 'Creating post...';
             statusMessage.classList.remove('hidden');
-            // No progress bar needed
 
             try {
                 // 1. Add post document to Firestore
@@ -365,12 +349,9 @@
                     postedBy: username,
                     content: content,
                     createdAt: serverTimestamp(),
-                    // --- NEW LIKE FIELDS ---
                     likesCount: 0,
                     likedBy: [],
-                    // ---------------------
                     fileURL: fileURL || null, // Save the link (or null)
-                    // filePath and fileName are no longer needed
                 });
 
                 // 2. Reset form and show success
@@ -384,10 +365,8 @@
             }
         }
 
-        // --- Handle Like (Completely new logic) ---
+        // --- Handle Like ---
         async function handleLike(postId) {
-            // --- ** LIKE FIX ** ---
-            // Use the portal 'username' (e.g., "Billy") as the unique ID, not the shared anonymous auth ID
             if (!username) {
                 console.error("Not logged in, cannot like post.");
                 return;
@@ -396,7 +375,6 @@
             const postRef = doc(db, "portals/sda-portal/posts", postId);
 
             try {
-                // Get the latest post data, just to be safe
                 const postDoc = await getDoc(postRef);
                 if (!postDoc.exists()) {
                     console.error("Post does not exist.");
@@ -405,18 +383,17 @@
                 
                 const postData = postDoc.data();
                 const likedBy = postData.likedBy || [];
-                // Check using the portal 'username'
                 const hasLiked = likedBy.includes(username);
 
                 if (hasLiked) {
-                    // --- USER WANTS TO UNLIKE ---
+                    // UNLIKE
                     await updateDoc(postRef, {
                         likesCount: increment(-1),
                         // Remove the portal 'username'
                         likedBy: arrayRemove(username)
                     });
                 } else {
-                    // --- USER WANTS TO LIKE ---
+                    // LIKE
                     await updateDoc(postRef, {
                         likesCount: increment(1),
                         // Add the portal 'username'
@@ -432,7 +409,7 @@
 
 
         // --- Handle Delete Post ---
-        async function handleDeletePost(postId) { // No longer needs filePath
+        async function handleDeletePost(postId) { 
             if (userRole !== 'admin') return;
 
             if (!confirm("Are you sure you want to delete this post? This action cannot be undone.")) {
@@ -440,8 +417,6 @@
             }
 
             try {
-                // We no longer need to delete a file from Storage.
-                // Just delete the post from Firestore
                 const postRef = doc(db, "portals/sda-portal/posts", postId);
                 await deleteDoc(postRef);
                 console.log("Post deleted from Firestore.");
@@ -451,6 +426,15 @@
                 alert("Error deleting post: " + error.message);
             }
         }
+
+        // --- Logout Handler ---
+        document.getElementById('logoutButton').addEventListener('click', (e) => {
+            e.preventDefault();
+            sessionStorage.removeItem('userRole');
+            sessionStorage.removeItem('username');
+            // Use replace to prevent back button from logging them back in
+            window.location.replace('portal.html'); 
+        });
 
     </script>
 
@@ -466,7 +450,7 @@
             </div>
             <div class="flex items-center space-x-4">
                 <span id="welcomeMessage" class="text-slate-300">Welcome...</span>
-                <a href="portal.html" id="logoutButton" class="text-sm text-slate-400 hover:text-indigo-400">Logout</a>
+                <a href="#" id="logoutButton" class="text-sm text-slate-400 hover:text-indigo-400">Logout</a>
             </div>
         </nav>
     </header>
@@ -484,15 +468,12 @@
                               class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
                 </div>
                 <div>
-                    <!-- This is the changed part -->
-                    <label for="postLink" class="block text-sm font-medium text-slate-300">Dropbox Link (Optional)</label>
+                    <label for="postLink" class="block text-sm font-medium text-slate-300">Google Drive Link (Optional)</label>
                     <input type="text" id="postLink" 
-                           placeholder="Paste your Dropbox 'Share' link here..."
+                           placeholder="Paste your Google Drive 'Share' link here..."
                            class="mt-1 block w-full bg-slate-800 border border-slate-700 rounded-md shadow-sm text-slate-100 py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
                 
-                <!-- Progress bar is removed -->
-
                 <button type="submit" 
                         class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black focus:ring-indigo-500 transition-colors duration-200">
                     Submit Post
@@ -528,4 +509,3 @@
 
 </body>
 </html>
-
