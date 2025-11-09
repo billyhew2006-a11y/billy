@@ -14,86 +14,32 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* Base styles and animations */
-        html {
-            scroll-behavior: smooth;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            /* Transition for the background color fade */
-            transition: background-color 0.3s ease-out, color 0.3s ease-out;
-        }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; }
 
         /* Animation classes */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .animate-fadeInUp {
-            animation: fadeInUp 0.7s ease-out both;
-        }
-        .animate-fadeIn {
-            animation: fadeIn 0.8s ease-out both;
-        }
+        .animate-fadeInUp { animation: fadeInUp 0.7s ease-out both; }
         
-        /* NEW: Nav link "bounce" animation */
+        /* Nav link "bounce" animation */
         @keyframes navBounce {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); } /* A small bounce up */
+            50% { transform: translateY(-3px); }
         }
-        .animate-navBounce {
-            animation: navBounce 0.3s ease-out;
-        }
+        .animate-navBounce { animation: navBounce 0.3s ease-out; }
         
-        /* Text color overrides for light/dark sections */
-        .force-dark-text h1, .force-dark-text h3, .force-dark-text p, .force-dark-text span {
-            color: #1f2937; /* Dark Grey */
-        }
-        .force-dark-text .text-indigo-600 {
-            color: #4f46e5; /* Dark Indigo */
-        }
-        .force-dark-text .text-gray-900 {
-            color: #111827; /* Darkest Grey */
-        }
-        .force-dark-text .text-gray-800 {
-            color: #1f2937; /* Dark Grey */
-        }
-         .force-dark-text .text-blue-600 {
-            color: #2563eb; /* Dark Blue */
-        }
-        
-        .force-light-text h1, .force-light-text h3, .force-light-text p, .force-light-text span {
-            color: #e5e7eb; /* Light Grey */
-        }
-        .force-light-text .text-purple-400 {
-            color: #c084fc; /* Purple */
-        }
-        .force-light-text .text-indigo-600 {
-            color: #c7d2fe; /* Lighter Indigo for light text */
-        }
-        .force-light-text .text-gray-900 {
-            color: #f9fafb; /* White */
-        }
-        .force-light-text .text-gray-800 {
-            color: #e5e7eb; /* Light Grey */
-        }
-        .force-light-text .text-blue-600 {
-            color: #93c5fd; /* Light Blue */
-        }
-        
-        /* About Section Gradient (Black -> Gray-Blue) */
+        /* About Section Gradient */
         .about-gradient {
             background: linear-gradient(to bottom, #000000 0%, #1e293b 100%);
         }
-
     </style>
 
     <!-- 
-      This script calls the 'index-script.js' file for the background fade.
+      This script now ONLY handles the mobile menu.
+      The complex background fade has been removed for stability.
     -->
     <script type="module" src="index-script.js"></script>
 
@@ -101,7 +47,7 @@
 <body class="bg-black text-slate-200 antialiased">
 
     <!-- Header -->
-    <header class="bg-black/80 shadow-lg sticky top-0 z-50 backdrop-blur-sm">
+    <header class="bg-black/80 shadow-lg sticky top-0 z-40 backdrop-blur-sm">
         <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
             <!-- Logo -->
             <a href="#" class="flex items-center space-x-3">
@@ -109,144 +55,146 @@
                      alt="SDA Logo" 
                      class="h-10 w-10 object-contain"
                      onerror="this.src='https://placehold.co/100x100/000000/white?text=SDA'; this.onerror=null;">
-                <span class="text-xl font-bold text-slate-100">SDA Productions WA</span>
+                <span class="text-lg md:text-xl font-bold text-slate-100">SDA Productions WA</span>
             </a>
             
-            <!-- Navigation Links -->
+            <!-- Navigation Links (Desktop) -->
             <div class="hidden md:flex space-x-6">
-                <!-- FIX: Default color is light slate, hover is purple -->
-                <a href="#matilda" class="text-slate-300 hover:text-purple-300 font-medium">Matilda</a>
-                <a href="#frozen" class="text-slate-300 hover:text-blue-400 font-medium">Frozen</a>
+                <!-- UPDATED: Links now point to the new #shows section -->
+                <a href="#shows" class="text-slate-300 hover:text-purple-300 font-medium">Shows</a>
                 <a href="#about" class="text-slate-300 hover:text-indigo-400 font-medium">About</a>
                 <a href="#contact" class="text-slate-300 hover:text-indigo-400 font-medium">Contact</a>
                 <a href="portal.html" class="text-slate-300 hover:text-indigo-400 font-medium">Portal</a>
             </div>
             
-            <!-- Mobile Menu Button (optional) -->
+            <!-- Mobile Menu Button -->
             <div class="md:hidden">
-                <button class="text-slate-300 focus:outline-none">
+                <button id="menu-button" class="text-slate-300 focus:outline-none p-1">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                 </button>
             </div>
         </nav>
+        
+        <!-- Mobile Menu (Fullscreen Overlay) -->
+        <div id="mobile-menu" class="fixed inset-0 z-50 flex hidden h-screen w-screen flex-col items-center justify-center bg-black/95 backdrop-blur-md">
+            <!-- Close Button -->
+            <button id="close-button" class="absolute top-6 right-6 text-slate-300 hover:text-white p-2">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <!-- Mobile Navigation Links -->
+            <nav class="flex flex-col space-y-8 text-center">
+                <a id="nav-shows" href="#shows" class="text-3xl font-medium text-slate-200 hover:text-purple-300">Shows</a>
+                <a id="nav-about" href="#about" class="text-3xl font-medium text-slate-200 hover:text-indigo-400">About</a>
+                <a id="nav-contact" href="#contact" class="text-3xl font-medium text-slate-200 hover:text-indigo-400">Contact</a>
+                <a id="nav-portal" href="portal.html" class="text-3xl font-medium text-slate-200 hover:text-indigo-400">Portal</a>
+            </nav>
+        </div>
     </header>
 
     <!-- Main Content -->
     <main>
 
-        <!-- ===== MATILDA SECTION ===== -->
-        <section id="matilda" class="min-h-screen py-24 md:py-32 flex items-center force-light-text">
-            <div class="container mx-auto px-6">
-                <div class="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-                    
-                    <!-- Text Content -->
-                    <div class="md:w-1/2 text-center md:text-left animate-fadeInUp">
-                        <span class="text-purple-400 font-semibold uppercase tracking-wider">Now Showing!</span>
-                        <h1 class="text-4xl md:text-6xl font-bold text-white mt-2 mb-6">Matilda The Musical JR.</h1>
-                        <!-- FIX: Updated Tagline -->
-                        <p class="text-lg text-slate-300 mb-8">
-                            Get ready to be a little bit naughty! Our acclaimed junior program returns.
-                        </p>
-                        
-                        <!-- Info Cards -->
-                        <div class="space-y-4 mb-10">
-                            <!-- CARD 1: REHEARSALS -->
-                            <div class="flex items-start p-4 bg-gray-900/50 rounded-lg shadow-md border border-slate-700">
-                                <svg class="w-6 h-6 text-purple-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <div>
-                                    <h3 class="font-semibold text-white">Rehearsals</h3>
-                                    <p class="text-slate-300">Starting late December.</p>
-                                </div>
-                            </div>
-                            <!-- CARD 2: PERFORMANCES -->
-                            <div class="flex items-start p-4 bg-gray-900/50 rounded-lg shadow-md border border-slate-700">
-                                <svg class="w-6 h-6 text-purple-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path></svg>
-                                <div>
-                                    <h3 class="font-semibold text-white">Performances</h3>
-                                    <p class="text-slate-300">Late January & February.</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Button -->
-                        <button disabled class="inline-block bg-gray-600 text-white/70 font-bold py-3 px-8 rounded-lg shadow-xl cursor-not-allowed">
-                            Tickets Soon
-                        </button>
-                    </div>
-                    
-                    <!-- Image -->
-                    <div class="md:w-1/2 mt-8 md:mt-0 animate-fadeIn" style="animation-delay: 200ms;">
-                        <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/MATILDA%20JR_FULL_VERTICAL_4C.jpg" 
-                             alt="Matilda The Musical Jr. Logo" 
-                             class="rounded-lg shadow-2xl w-full max-w-md mx-auto"
-                             onerror="this.src='httpshttps://placehold.co/600x750/000000/e0e7ff?text=Matilda+Jr.+Logo'; this.onerror=null;">
-                    </div>
-                </div>
+        <!-- ===== NEW WELCOME SECTION ===== -->
+        <!-- This replaces the big "gap". It's a proper hero. -->
+        <!-- UPDATED: Added relative, bg-image, bg-cover, and bg-center -->
+        <section id="welcome" class="relative text-slate-200 py-24 md:py-32 bg-[url('https://raw.githubusercontent.com/apiiela/billyhdesign/main/design-banner.jpg')] bg-cover bg-center">
+            
+            <!-- NEW: Dark overlay for text readability -->
+            <div class="absolute inset-0 bg-black/70 z-0"></div>
+            
+            <!-- UPDATED: Added relative and z-10 to sit on top of the overlay -->
+            <div class="container relative z-10 mx-auto px-6 text-center animate-fadeInUp">
+                <h1 class="text-4xl md:text-5xl font-bold text-white mb-6">Welcome to SDA Productions WA</h1>
+                <p class="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-10">
+                    Nurturing local talent and bringing spectacular, high-quality productions to the stage.
+                </p>
+                <!-- UPDATED: Text changed to 2026 -->
+                <a href="#shows" class="inline-block bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-xl hover:bg-indigo-500 transition-colors">
+                    See Our 2026 Season
+                </a>
             </div>
         </section>
 
-        <!-- ===== FROZEN SECTION ===== -->
-        <!-- FIX: Changed from force-light-text to force-dark-text -->
-        <section id="frozen" class="min-h-screen py-24 md:py-32 flex items-center force-dark-text">
+        <!-- ===== NEW "OUR SEASON" SECTION ===== -->
+        <!-- This section holds the two show cards in a responsive grid -->
+        <!-- UPDATED: Changed bg-slate-100 to bg-black -->
+        <section id="shows" class="py-24 bg-black">
             <div class="container mx-auto px-6">
-                <div class="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+                <!-- Section Title -->
+                <!-- UPDATED: Changed text-gray-900 to text-slate-100 for dark bg -->
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-100 text-center mb-12">
+                    <!-- UPDATED: Text changed to 2026 -->
+                    Our 2026 Season
+                </h2>
+                
+                <!-- Responsive Grid: 1 col on mobile, 2 cols on desktop -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
                     
-                    <!-- Text Content -->
-                    <div class="md:w-1/2 text-center md:text-left animate-fadeInUp">
-                        <span class="text-indigo-600 font-semibold uppercase tracking-wider">Also Showing!</span>
-                        <h1 class="text-4xl md:text-6xl font-bold text-gray-900 mt-2 mb-6">Disney's Frozen KIDS</h1>
-                        <!-- FIX: Updated Tagline -->
-                        <p class="text-lg text-gray-800 mb-8">
-                            Let it go! Journey to Arendelle with our next magical production.
-                        </p>
-                        
-                        <!-- Info Cards -->
-                        <div class="space-y-4 mb-10">
-                            <!-- CARD 1: REHEARSALS -->
-                            <!-- FIX: Need to make these cards light text friendly -->
-                            <div class="flex items-start p-4 bg-white/60 rounded-lg shadow-md border border-blue-200">
-                                <svg class="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 002-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900">Rehearsals</h3>
-                                    <p class="text-gray-800">Starting late December.</p>
-                                </div>
-                            </div>
-                            <!-- CARD 2: PERFORMANCES -->
-                            <div class="flex items-start p-4 bg-white/60 rounded-lg shadow-md border border-blue-200">
-                                <svg class="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path></svg>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900">Performances</h3>
-                                    <p class="text-gray-800">Late January & February.</p>
-                                </div>
-                            </div>
+                    <!-- ===== MATILDA CARD ===== -->
+                    <!-- UPDATED: Changed bg-white to bg-slate-900 and added border -->
+                    <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden flex flex-col animate-fadeInUp" style="animation-delay: 100ms;">
+                        <!-- Image now has a container -->
+                        <div class="bg-black p-6 flex justify-center items-center">
+                            <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/MATILDA%20JR_FULL_VERTICAL_4C.jpg" 
+                                 alt="Matilda The Musical Jr. Logo" 
+                                 class="rounded-lg w-full max-w-xs"
+                                 onerror="this.src='https://placehold.co/600x750/000000/e0e7ff?text=Matilda+Jr.+Logo'; this.onerror=null;">
                         </div>
-                        
-                        <!-- Button -->
-                        <button disabled class="inline-block bg-gray-400 text-gray-800/70 font-bold py-3 px-8 rounded-lg shadow-xl cursor-not-allowed">
-                            Tickets Soon
-                        </button>
+                        <!-- Card Content -->
+                        <div class="p-8 flex flex-col flex-grow"> <!-- flex-grow makes card content fill space -->
+                            <!-- UPDATED: Text color changed for dark background -->
+                            <h3 class="text-2xl md:text-3xl font-bold text-white mb-3">Matilda The Musical JR.</h3>
+                            <!-- UPDATED: Text changed to 2026 -->
+                            <!-- UPDATED: Text color changed for dark background -->
+                            <span class="block text-purple-400 font-semibold mb-4">January & February 2026</span>
+                            <!-- UPDATED: Text color changed for dark background -->
+                            <p class="text-slate-300 mb-6 flex-grow"> <!-- flex-grow pushes button to bottom -->
+                                Get ready to be a little bit naughty! Our acclaimed junior program returns.
+                            </p>
+                            <!-- UPDATED: Button text changed -->
+                            <button disabled class="w-full mt-auto bg-gray-600 text-white/70 font-bold py-3 px-8 rounded-lg shadow-lg cursor-not-allowed">
+                                Tickets Coming Soon
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ===== FROZEN CARD ===== -->
+                    <!-- FIXED: This entire block was broken. It now correctly mirrors the Matilda card's structure. -->
+                    <!-- UPDATED: Kept the border-2 and blue-300 color -->
+                    <div class="bg-white border-2 border-blue-300 rounded-lg shadow-xl overflow-hidden flex flex-col animate-fadeInUp" style="animation-delay: 200ms;">
+                        <!-- Image Container -->
+                        <div class="bg-blue-100 p-6 flex justify-center items-center">
+                            <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/FZN_KIDS_DTL_Hero_Logo.png" 
+                                 alt="Frozen KIDS Logo" 
+                                 class="rounded-lg w-full max-w-xs"
+                                 onerror="this.src='https://placehold.co/600x750/bae6fd/1e3a8a?text=Frozen+KIDS+Logo'; this.onerror=null;">
+                        </div>
+                        <!-- Card Content (Mirrors Matilda card structure) -->
+                        <div class="p-8 flex flex-col flex-grow">
+                            <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">Disney's Frozen KIDS</h3>
+                            <span class="block text-blue-600 font-semibold mb-4">January & February 2026</span>
+                            <p class="text-gray-700 mb-6 flex-grow">
+                                Let it go! Journey to Arendelle with our next magical production.
+                            </p>
+                            <!-- UPDATED: Button text changed -->
+                            <button disabled class="w-full mt-auto bg-gray-400 text-gray-800/70 font-bold py-3 px-8 rounded-lg shadow-lg cursor-not-allowed">
+                                Tickets Coming Soon
+                            </button>
+                        </div>
                     </div>
                     
-                    <!-- Image -->
-                    <div class="md:w-1/2 mt-8 md:mt-0 animate-fadeIn" style="animation-delay: 200ms;">
-                        <!-- FIX: Updated logo URL -->
-                        <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/FZN_KIDS_DTL_Hero_Logo.png" 
-                             alt="Frozen KIDS Logo" 
-                             class="rounded-lg shadow-2xl w-full max-w-md mx-auto"
-                             onerror="this.src='httpshttps://placehold.co/600x750/bae6fd/1e3a8a?text=Frozen+KIDS+Logo'; this.onerror=null;">
-                    </div>
                 </div>
             </div>
         </section>
 
         <!-- ===== ABOUT SECTION ===== -->
-        <section id="about" class="py-16 md:py-24 about-gradient force-light-text">
+        <!-- This section is unchanged, but now fits the new flow -->
+        <section id="about" class="py-20 md:py-24 about-gradient text-slate-200">
             <div class="container mx-auto px-6 text-center max-w-3xl">
-                <!-- FIX: Removed bg-black and rounded-lg to make logo transparent -->
                 <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/logosdatrans.png" 
                      alt="SDA Logo" 
-                     class="max-w-48 mx-auto mb-6"
-                     onerror="this.src='https_placehold.co/200x200/000000/white?text=SDA'; this.onerror=null;">
+                     class="w-3/4 max-w-48 mx-auto mb-6"
+                     onerror="this.src='https://placehold.co/200x200/000000/white?text=SDA'; this.onerror=null;">
                 <h2 class="text-3xl font-bold text-white mb-4">About SDA Productions WA</h2>
                 <p class="text-lg text-slate-300 leading-relaxed max-w-prose mx-auto">
                     SDA Productions WA is committed to providing a quality, positive, and supportive environment to the local community, helping each performer reach their potential. We are dedicated to nurturing talent and bringing spectacular, high-quality productions to the stage, whether supporting a recreational passion or a desire to pursue a career in the performing arts.
@@ -257,25 +205,23 @@
     </main>
 
     <!-- Footer -->
+    <!-- This section is unchanged -->
     <footer id="contact" class="bg-black text-slate-400 py-16">
         <div class="container mx-auto px-6 text-center">
             <h3 class="text-2xl font-bold text-white mb-4">Get In Touch</h3>
             <p class="mb-8">Follow us on social media for the latest updates on auditions, enrolments, and shows!</p>
             
-            <!-- Social Media Links -->
-            <div class="flex justify-center space-x-6 mb-8">
+            <div class="flex justify-center space-x-8 mb-8">
                 <a href="https://www.facebook.com/SingDanceActWa/" 
                    target="_blank" 
                    class="text-slate-400 hover:text-indigo-400 transition-transform hover:scale-110">
-                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg>
+                    <svg class="w-9 h-9" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg>
                     <span class="sr-only">Facebook</span>
                 </a>
-                <!-- FIX: Replaced Instagram SVG with a standard, clean one -->
                 <a href="https://www.instagram.com/singdanceactwa/?hl=en" 
                    target="_blank" 
                    class="text-slate-400 hover:text-indigo-400 transition-transform hover:scale-110">
-                    <!-- NEW, CLEANER SVG -->
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                    <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
                         <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                         <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
