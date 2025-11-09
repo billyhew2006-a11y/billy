@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
     // --- Color Definitions ---
     const matildaColor = [0, 0, 0]; // Black
-    const frozenColor = [125, 211, 252]; // Lighter Blue ('sky-300')
+    const frozenColor = [186, 230, 253]; // NEW: Much Lighter Icy Blue ('sky-200')
     const matildaTextColor = [229, 231, 235]; // Light Slate ('text-slate-200')
 
     // --- UI Elements ---
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         activeColor = '#c084fc'; // Purple
                         break;
                     case 'frozen':
-                        activeColor = '#60a5fa'; // Frozen Blue
+                        activeColor = '#bae6fd'; // NEW: Matching Lighter Blue ('sky-200')
                         break;
                     // --- "About" and "Contact" no longer get a special color ---
                     default:
