@@ -211,18 +211,34 @@
     <footer id="contact" class="bg-black text-slate-400 py-16">
         <div class="container mx-auto px-6 text-center">
             <h3 class="text-2xl font-bold text-white mb-4 animate-on-scroll">Get In Touch</h3>
-            <p class="mb-8 animate-on-scroll" style="transition-delay: 100ms;">
-                Follow us on social media for the latest updates on auditions, enrolments, and shows!
+            <p class="mb-8 max-w-lg mx-auto animate-on-scroll" style="transition-delay: 100ms;">
+                Have a question? Send us an email or follow us on social media for the latest updates!
+            </p>
+
+            <!-- 
+              FIXED: Removed the HTML form and replaced it 
+              with a direct mailto link.
+            -->
+            <div class="mb-16 animate-on-scroll" style="transition-delay: 200ms;">
+                <a href="mailto:sdaproductionswa@gmail.com"
+                   class="inline-block bg-indigo-600 text-white font-bold py-3 px-10 rounded-lg shadow-xl hover:bg-indigo-500 transition-all duration-300 transform hover:scale-105">
+                    Email Us: sdaproductionswa@gmail.com
+                </a>
+            </div>
+            
+            <p class="mb-8 animate-on-scroll" style="transition-delay: 300ms;">
+                Find us on social media:
             </p>
             
-            <div class="flex justify-center space-x-8 mb-8 animate-on-scroll" style="transition-delay: 200ms;">
+            <div class="flex justify-center space-x-8 mb-8 animate-on-scroll" style="transition-delay: 400ms;">
                 <a href="https://www.facebook.com/SingDanceActWa/" 
                    target="_blank" 
                    class="text-slate-400 hover:text-indigo-400 transition-transform hover:scale-110">
                     <svg class="w-9 h-9" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg>
                     <span class="sr-only">Facebook</span>
                 </a>
-                <a href="https.www.instagram.com/singdanceactwa/?hl=en" 
+                <!-- FIXED: Corrected the broken Instagram link -->
+                <a href="https://www.instagram.com/singdanceactwa/?hl=en" 
                    target="_blank" 
                    class="text-slate-400 hover:text-indigo-400 transition-transform hover:scale-110">
                     <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
@@ -234,7 +250,7 @@
                 </a>
             </div>
             
-            <p class="text-sm animate-on-scroll" style="transition-delay: 300ms;">&copy; 2025 SDA Productions WA. All rights reserved.</p>
+            <p class="text-sm animate-on-scroll" style="transition-delay: 500ms;">&copy; 2025 SDA Productions WA. All rights reserved.</p>
         </div>
     </footer>
 
