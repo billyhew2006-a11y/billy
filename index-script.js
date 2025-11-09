@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
     // --- Color Definitions ---
     const matildaColor = [0, 0, 0]; // Black
-    const frozenColor = [224, 242, 254]; // Icy Light Blue ('sky-100')
+    const frozenColor = [125, 211, 252]; // Icy Light Blue ('sky-300') - MORE BLUE
     const matildaTextColor = [229, 231, 235]; // Light Slate ('text-slate-200')
     const frozenTextColor = [17, 24, 39]; // Dark Grey ('text-gray-900')
 
@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageBody = document.body;
     const matildaSection = document.getElementById('matilda');
     const frozenSection = document.getElementById('frozen');
+
+    // --- Global State ---
+    let currentActiveSection = 'matilda'; // Keep track of which section is visible
 
     // --- Helper function for color interpolation ---
     function lerpColor(start, end, amount) {
@@ -27,8 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
          const scrollY = window.scrollY;
          
          // Define the start and end points for the fade
-         const fadeStart = matildaSection.offsetTop + (matildaSection.offsetHeight * 0.25); // Start fade 25% into Matilda section
-         const fadeEnd = frozenSection.offsetTop + (frozenSection.offsetHeight * 0.25);   // End fade 25% into Frozen section
+         const fadeStart = matildaSection.offsetTop + (matildaSection.offsetHeight * 0.50); // Start fade 50% into Matilda section
+         const fadeEnd = frozenSection.offsetTop;   // End fade right as Frozen section starts
          
          // Calculate progress (0.0 to 1.0)
          let progress = (scrollY - fadeStart) / (fadeEnd - fadeStart);
@@ -62,6 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     heading.classList.add('pulse-emphasis');
                     setTimeout(() => heading.classList.remove('pulse-emphasis'), 500);
                 }
+                
+                // --- NEW: Update the active section ID ---
+                currentActiveSection = entry.target.id;
             }
         });
     }, observerOptions);
@@ -71,20 +77,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 3. Update Nav Link Colors ---
     // This makes the nav links adapt as you scroll
     const navLinks = document.querySelectorAll('header nav a');
-    const matildaLink = document.querySelector('a[href="#matilda"]');
+    const matildaLink = document.querySelector('a[href="#matilda"]'); // We no longer need this, but it's ok
     
     function updateNavColors(progress) {
         // progress is 0 (black) to 1 (light blue)
         
-        // This is a simple text color. We need to fade the *other* links.
-        const navColor = lerpColor(matildaTextColor, frozenTextColor, progress);
+        const navColor = `rgb(${matildaTextColor[0]}, ${matildaTextColor[1]}, ${matildaTextColor[2]})`;
         
         navLinks.forEach(link => {
-            // Don't fade the 'Matilda' link, it's special (purple)
-            if (link === matildaLink) {
-                // You could fade this too, but for now it stays purple
-                // link.style.color = lerpColor([192, 132, 252], [79, 70, 231], progress);
+            const linkSection = link.getAttribute('href').substring(1);
+            
+            // Check if this link is for the *currently active* section
+            if (linkSection === currentActiveSection) {
+                if (linkSection === 'matilda') {
+                    link.style.color = '#c084fc'; // Purple
+                } else if (linkSection === 'frozen') {
+                    link.style.color = '#60a5fa'; // Frozen Blue (sky-500)
+                } else {
+                    // This is for 'about' or 'contact' when active
+                    link.style.color = '#818cf8'; // Indigo
+                }
             } else {
+                // This is not the active link, so just make it white
                 link.style.color = navColor;
             }
         });
