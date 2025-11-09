@@ -16,13 +16,6 @@
     <style>
         html { scroll-behavior: smooth; }
         body { font-family: 'Inter', sans-serif; }
-
-        /* Animation classes */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeInUp { animation: fadeInUp 0.7s ease-out both; }
         
         /* Nav link "bounce" animation */
         @keyframes navBounce {
@@ -31,7 +24,7 @@
         }
         .animate-navBounce { animation: navBounce 0.3s ease-out; }
 
-        /* --- NEW: Lively Animations --- */
+        /* --- Lively Animations --- */
         
         /* 1. Slow pulse for the main Hero CTA button */
         @keyframes pulse-slow {
@@ -52,13 +45,24 @@
         .about-gradient {
             background: linear-gradient(to bottom, #000000 0%, #1e293b 100%);
         }
+
+        /* --- Scroll-in "Jump Out" Animation --- */
+        
+        /* 1. The "before" state: hidden */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+            will-change: opacity, transform; /* Performance boost */
+        }
+        
+        /* 2. The "after" state: visible */
+        .animate-on-scroll.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
-
-    <!-- 
-      This script now ONLY handles the mobile menu.
-    -->
-    <script type="module" src="index-script.js"></script>
-
+    
 </head>
 <body class="bg-black text-slate-200 antialiased">
 
@@ -75,7 +79,6 @@
             </a>
             
             <!-- Navigation Links (Desktop) -->
-            <!-- UPDATED: Added transition, hover:scale, and increased spacing -->
             <div class="hidden md:flex space-x-8">
                 <a href="#shows" class="text-slate-300 hover:text-purple-300 font-medium transform transition-all duration-300 hover:scale-110">Shows</a>
                 <a href="#about" class="text-slate-300 hover:text-indigo-400 font-medium transform transition-all duration-300 hover:scale-110">About</a>
@@ -110,30 +113,30 @@
     <!-- Main Content -->
     <main>
 
-        <!-- ===== NEW WELCOME SECTION ===== -->
-        <section id="welcome" class="relative text-slate-200 py-24 md:py-32 bg-[url('https://raw.githubusercontent.com/apiiela/billyhdesign/main/design-banner.jpg')] bg-cover bg-center">
+        <!-- ===== WELCOME SECTION ===== -->
+        <!-- This is the full-screen hero -->
+        <section id="welcome" class="relative text-slate-200 bg-[url('https://raw.githubusercontent.com/apiiela/billyhdesign/main/design-banner.jpg')] bg-cover bg-center min-h-screen flex items-center">
             
-            <!-- Dark overlay for text readability -->
             <div class="absolute inset-0 bg-black/70 z-0"></div>
             
-            <!-- Content -->
-            <div class="container relative z-10 mx-auto px-6 text-center animate-fadeInUp">
-                <h1 class="text-4xl md:text-5xl font-bold text-white mb-6">Welcome to SDA Productions WA</h1>
-                <p class="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-10">
+            <div class="container relative z-10 mx-auto px-6 text-center">
+                <h1 class="text-4xl md:text-5xl font-bold text-white mb-6 animate-on-scroll" style="transition-delay: 100ms;">
+                    Welcome to SDA Productions WA
+                </h1>
+                <p class="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-10 animate-on-scroll" style="transition-delay: 200ms;">
                     Nurturing local talent and bringing spectacular, high-quality productions to the stage.
                 </p>
-                <!-- UPDATED: Added pulse animation and hover lift effect -->
-                <a href="#shows" class="inline-block bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-xl hover:bg-indigo-500 transition-all duration-300 transform hover:scale-105 animate-pulse-slow">
+                <a href="#shows" class="inline-block bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-xl hover:bg-indigo-500 transition-all duration-300 transform hover:scale-105 animate-pulse-slow animate-on-scroll" style="transition-delay: 300ms;">
                     See Our 2026 Season
                 </a>
             </div>
         </section>
 
-        <!-- ===== NEW "OUR SEASON" SECTION ===== -->
+        <!-- ===== "OUR SEASON" SECTION ===== -->
         <section id="shows" class="py-24 bg-black">
             <div class="container mx-auto px-6">
                 <!-- Section Title -->
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-100 text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-100 text-center mb-12 animate-on-scroll">
                     Our 2026 Season
                 </h2>
                 
@@ -141,16 +144,15 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
                     
                     <!-- ===== MATILDA CARD ===== -->
-                    <!-- UPDATED: Added transition, hover shadow, and hover translate -->
-                    <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden flex flex-col transition-all duration-300 ease-in-out hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-2 animate-fadeInUp" style="animation-delay: 100ms;">
-                        <!-- Image now has a container -->
-                        <div class="bg-black p-6 flex justify-center items-center">
+                    <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden flex flex-col transition-all duration-300 ease-in-out hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-2 animate-on-scroll">
+                        <!-- FIXED: This container is h-96, making it identical to the other card -->
+                        <div class="bg-black p-6 flex justify-center items-center h-96">
+                            <!-- FIXED: The image inside rescales. The broken comment is GONE. -->
                             <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/MATILDA%20JR_FULL_VERTICAL_4C.jpg" 
                                  alt="Matilda The Musical Jr. Logo" 
-                                 class="rounded-lg w-full max-w-xs"
+                                 class="rounded-lg max-w-xs max-h-full"
                                  onerror="this.src='https://placehold.co/600x750/000000/e0e7ff?text=Matilda+Jr.+Logo'; this.onerror=null;">
                         </div>
-                        <!-- Card Content -->
                         <div class="p-8 flex flex-col flex-grow"> 
                             <h3 class="text-2xl md:text-3xl font-bold text-white mb-3">Matilda The Musical JR.</h3>
                             <span class="block text-purple-400 font-semibold mb-4">January & February 2026</span>
@@ -164,28 +166,21 @@
                     </div>
 
                     <!-- ===== FROZEN CARD ===== -->
-                    <!-- UPDATED: Converted to DARK MODE -->
-                    <!-- UPDATED: Added matching transition and hover effects -->
-                    <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden flex flex-col transition-all duration-300 ease-in-out hover:shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-2 animate-fadeInUp" style="animation-delay: 200ms;">
-                        <!-- Image Container -->
-                        <!-- UPDATED: bg-blue-100 changed to bg-black to tie it in -->
-                        <div class="bg-black p-6 flex justify-center items-center">
+                    <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden flex flex-col transition-all duration-300 ease-in-out hover:shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-2 animate-on-scroll" style="transition-delay: 100ms;">
+                        <!-- FIXED: This container is h-96, making it identical to the other card -->
+                        <div class="bg-black p-6 flex justify-center items-center h-96">
+                            <!-- FIXED: The image inside rescales. The broken comment is GONE. -->
                             <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/FZN_KIDS_DTL_Hero_Logo.png" 
                                  alt="Frozen KIDS Logo" 
-                                 class="rounded-lg w-full max-w-xs"
-                                 onerror="this.src='https://placehold.co/600x750/bae6fd/1e3a8a?text=Frozen+KIDS+Logo'; this.onerror=null;">
+                                 class="rounded-lg max-w-xs max-h-full"
+                                 onerror="this.src='https.placehold.co/600x750/bae6fd/1e3a8a?text=Frozen+KIDS+Logo'; this.onerror=null;">
                         </div>
-                        <!-- Card Content (Mirrors Matilda card structure) -->
                         <div class="p-8 flex flex-col flex-grow">
-                            <!-- UPDATED: Text colors changed to light -->
                             <h3 class="text-2xl md:text-3xl font-bold text-white mb-3">Disney's Frozen KIDS</h3>
-                            <!-- UPDATED: Text color changed to light blue -->
                             <span class="block text-blue-400 font-semibold mb-4">January & February 2026</span>
-                            <!-- UPDATED: Text colors changed to light -->
                             <p class="text-slate-300 mb-6 flex-grow">
                                 Let it go! Journey to Arendelle with our next magical production.
-                            </D
-                            <!-- UPDATED: Button style changed to match Matilda's disabled button -->
+                            </p>
                             <button disabled class="w-full mt-auto bg-gray-600 text-white/70 font-bold py-3 px-8 rounded-lg shadow-lg cursor-not-allowed">
                                 Tickets Coming Soon
                             </button>
@@ -201,10 +196,10 @@
             <div class="container mx-auto px-6 text-center max-w-3xl">
                 <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/logosdatrans.png" 
                      alt="SDA Logo" 
-                     class="w-3/4 max-w-48 mx-auto mb-6"
+                     class="w-3/4 max-w-48 mx-auto mb-6 animate-on-scroll"
                      onerror="this.src='https://placehold.co/200x200/000000/white?text=SDA'; this.onerror=null;">
-                <h2 class="text-3xl font-bold text-white mb-4">About SDA Productions WA</h2>
-                <p class="text-lg text-slate-300 leading-relaxed max-w-prose mx-auto">
+                <h2 class="text-3xl font-bold text-white mb-4 animate-on-scroll" style="transition-delay: 100ms;">About SDA Productions WA</h2>
+                <p class="text-lg text-slate-300 leading-relaxed max-w-prose mx-auto animate-on-scroll" style="transition-delay: 200ms;">
                     SDA Productions WA is committed to providing a quality, positive, and supportive environment to the local community, helping each performer reach their potential. We are dedicated to nurturing talent and bringing spectacular, high-quality productions to the stage, whether supporting a recreational passion or a desire to pursue a career in the performing arts.
                 </p>
             </div>
@@ -215,11 +210,12 @@
     <!-- Footer -->
     <footer id="contact" class="bg-black text-slate-400 py-16">
         <div class="container mx-auto px-6 text-center">
-            <h3 class="text-2xl font-bold text-white mb-4">Get In Touch</h3>
-            <p class="mb-8">Follow us on social media for the latest updates on auditions, enrolments, and shows!</p>
+            <h3 class="text-2xl font-bold text-white mb-4 animate-on-scroll">Get In Touch</h3>
+            <p class="mb-8 animate-on-scroll" style="transition-delay: 100ms;">
+                Follow us on social media for the latest updates on auditions, enrolments, and shows!
+            </p>
             
-            <!-- UPDATED: Increased icon size and spacing for easier tapping -->
-            <div class="flex justify-center space-x-8 mb-8">
+            <div class="flex justify-center space-x-8 mb-8 animate-on-scroll" style="transition-delay: 200ms;">
                 <a href="https://www.facebook.com/SingDanceActWa/" 
                    target="_blank" 
                    class="text-slate-400 hover:text-indigo-400 transition-transform hover:scale-110">
@@ -238,9 +234,89 @@
                 </a>
             </div>
             
-            <p class="text-sm">&copy; 2025 SDA Productions WA. All rights reserved.</p>
+            <p class="text-sm animate-on-scroll" style="transition-delay: 300ms;">&copy; 2025 SDA Productions WA. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- 
+      INLINE SCRIPT
+      All JavaScript is now contained here.
+    -->
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            /**
+             * ----------------------------------------------------------------
+             * SECTION 1: Mobile Menu Toggle
+             * ----------------------------------------------------------------
+             */
+            const menuButton = document.getElementById('menu-button');
+            const closeButton = document.getElementById('close-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            const navLinks = [
+                document.getElementById('nav-shows'),
+                document.getElementById('nav-about'),
+                document.getElementById('nav-contact'),
+                document.getElementById('nav-portal')
+            ];
+
+            const openMenu = () => {
+                if (mobileMenu) {
+                    mobileMenu.classList.remove('hidden');
+                    document.body.style.overflow = 'hidden'; 
+                }
+            };
+
+            const closeMenu = () => {
+                if (mobileMenu) {
+                    mobileMenu.classList.add('hidden');
+                    document.body.style.overflow = 'auto'; 
+                }
+            };
+
+            if (menuButton) {
+                menuButton.addEventListener('click', openMenu);
+            }
+
+            if (closeButton) {
+                closeButton.addEventListener('click', closeMenu);
+            }
+
+            navLinks.forEach(link => {
+                if (link) {
+                    link.addEventListener('click', closeMenu);
+                }
+            });
+
+            /**
+             * ----------------------------------------------------------------
+             * SECTION 2: Scroll-in "Jump Out" Animations
+             * ----------------------------------------------------------------
+             */
+            const scrollElements = document.querySelectorAll('.animate-on-scroll');
+                
+            const scrollObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    // When the element is in view
+                    if (entry.isIntersecting) {
+                        // Add the 'is-visible' class to trigger the CSS animation
+                        entry.target.classList.add('is-visible');
+                        // Stop observing this element so the animation doesn't re-run
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.1 // Trigger when 10% of the element is visible
+            });
+
+            // Observe each element
+            scrollElements.forEach(el => {
+                scrollObserver.observe(el);
+            });
+
+        });
+    </script>
 
 </body>
 </html>
