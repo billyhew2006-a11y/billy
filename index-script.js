@@ -3,15 +3,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
     // --- Color Definitions ---
     const matildaColor = [0, 0, 0]; // Black
-    const frozenColor = [14, 165, 233]; // Richer Blue ('sky-500')
+    const frozenColor = [125, 211, 252]; // Lighter Blue ('sky-300')
     const matildaTextColor = [229, 231, 235]; // Light Slate ('text-slate-200')
-    // frozenTextColor is no longer needed, handled by CSS
 
     // --- UI Elements ---
     const pageBody = document.body;
     const sections = document.querySelectorAll('section[id]');
     const matildaSection = document.getElementById('matilda');
     const frozenSection = document.getElementById('frozen');
+    const navLinks = document.querySelectorAll('header nav a');
 
     // --- Global State ---
     let currentActiveSection = 'matilda'; // Keep track of which section is visible
@@ -42,16 +42,9 @@ document.addEventListener('DOMContentLoaded', () => {
          // Interpolate the background color
          const newBgColor = lerpColor(matildaColor, frozenColor, progress);
          pageBody.style.backgroundColor = newBgColor;
-         
-         // *** FIX: REMOVED the global text color fade. ***
-         // This lets the CSS classes (force-dark-text, etc.) do their job.
-         
-         // Also update the nav link colors
-         updateNavColors();
     }
 
-    // --- 2. Arrival Emphasis (Pulse) ---
-    // This finds what section is active
+    // --- 2. Arrival Emphasis (Bounce) & Active Nav State ---
     const observerOptions = {
         root: null,
         rootMargin: '0px',
@@ -61,45 +54,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const observer = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
-                const heading = entry.target.querySelector('h2, h1');
-                if (heading) {
-                    heading.classList.add('pulse-emphasis');
-                    setTimeout(() => heading.classList.remove('pulse-emphasis'), 500);
-                }
+                const newActiveSectionId = entry.target.id;
                 
-                // --- NEW: Update the active section ID ---
-                currentActiveSection = entry.target.id;
+                // Only update if the section has changed
+                if (newActiveSectionId !== currentActiveSection) {
+                    currentActiveSection = newActiveSectionId;
+                    updateNavColors(currentActiveSection);
+                }
             }
         });
     }, observerOptions);
 
     sections.forEach(section => observer.observe(section));
     
-    // --- 3. Update Nav Link Colors ---
-    // This makes the nav links adapt as you scroll
-    const navLinks = document.querySelectorAll('header nav a');
-    
-    function updateNavColors() {
-        // *** FIX: This function no longer fades. It just sets active/inactive colors. ***
-        
+    // --- 3. Update Nav Link Colors & Add Bounce ---
+    function updateNavColors(activeSectionId) {
         const navColor = `rgb(${matildaTextColor[0]}, ${matildaTextColor[1]}, ${matildaTextColor[2]})`; // Hardcoded light color
-        
+
         navLinks.forEach(link => {
             const linkSection = link.getAttribute('href').substring(1);
             
-            // Check if this link is for the *currently active* section
-            if (linkSection === currentActiveSection) {
-                if (linkSection === 'matilda') {
-                    link.style.color = '#c084fc'; // Purple
-                } else if (linkSection === 'frozen') {
-                    link.style.color = '#60a5fa'; // Frozen Blue (sky-500)
-                } else if (linkSection === 'about' || linkSection === 'contact') {
-                    link.style.color = '#818cf8'; // Indigo
-                } else {
-                     link.style.color = navColor; // Default for 'portal'
+            // 1. Reset all animations
+            link.classList.remove('animate-navBounce');
+
+            if (linkSection === activeSectionId) {
+                // This is the new active link
+                let activeColor;
+                switch (linkSection) {
+                    case 'matilda':
+                        activeColor = '#c084fc'; // Purple
+                        break;
+                    case 'frozen':
+                        activeColor = '#60a5fa'; // Frozen Blue
+                        break;
+                    // --- "About" and "Contact" no longer get a special color ---
+                    default:
+                        activeColor = navColor; // Default for 'about', 'contact', 'portal'
+                }
+                link.style.color = activeColor;
+
+                // --- Add bounce animation ---
+                // Only bounce if it's one of the main sections we want to highlight
+                if (linkSection === 'matilda' || linkSection === 'frozen' || linkSection === 'about' || linkSection === 'contact') {
+                    link.classList.add('animate-navBounce');
                 }
             } else {
-                // This is not the active link, so just make it white
+                // This is not the active link, make it white
                 link.style.color = navColor;
             }
         });
@@ -110,5 +110,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initial calls on load
     handleScrollFade();
+    updateNavColors(currentActiveSection); // Set the initial active link color
 
 });
