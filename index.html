@@ -1,256 +1,98 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SDA Productions WA - Matilda Jr.</title>
-    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
-    <!-- Load Inter font --><link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* Use Inter font family */
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Hero section background */
-        .hero-gradient {
-            background: #000000; /* Plain pitch black */
-        }
-        @media (min-width: 768px) {
-            .hero-gradient {
-                background: #000000; /* Plain pitch black */
-            }
-        }
-        /* Card background in dark theme */
-        .card-bg-dark {
-            background-color: #2b3b55; /* Slightly lighter than hero for contrast */
-        }
-        /* Adjust specific logo sizes if needed, or let Tailwind classes handle it */
-        .sda-logo-small {
-            height: 3rem; /* h-12 */
-            width: 3rem;  /* w-12 */
-        }
-        /* DELETED the .sda-logo-large style rule */
-
-        /* --- Animations --- */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes zoomIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        /* Animation Utility Classes */
-        .animate-fadeIn {
-            animation: fadeIn 1.2s ease-out;
-        }
-        .animate-fadeInUp {
-            animation: fadeInUp 0.8s ease-out;
-            animation-fill-mode: both; /* Keeps the state after animation */
-        }
-        .animate-zoomIn {
-            animation: zoomIn 0.8s ease-out;
-            animation-fill-mode: both;
-        }
-
-        /* Staggered delay helpers */
-        .delay-200 { animation-delay: 200ms; }
-        .delay-400 { animation-delay: 400ms; }
-        .delay-600 { animation-delay: 600ms; }
+// This file is now separate. All the JavaScript logic goes here.
+document.addEventListener('DOMContentLoaded', () => {
         
-        /* Smooth scrolling */
-        html {
-            scroll-behavior: smooth;
-        }
+    // --- Color Definitions ---
+    const matildaColor = [0, 0, 0]; // Black
+    const frozenColor = [224, 242, 254]; // Icy Light Blue ('sky-100')
+    const matildaTextColor = [229, 231, 235]; // Light Slate ('text-slate-200')
+    const frozenTextColor = [17, 24, 39]; // Dark Grey ('text-gray-900')
 
-        /* --- Arrival Animation --- */
-        @keyframes textEmphasis {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        .animate-arrival {
-            animation: textEmphasis 0.8s ease-out;
-        }
+    // --- UI Elements ---
+    const pageBody = document.body;
+    const matildaSection = document.getElementById('matilda');
+    const frozenSection = document.getElementById('frozen');
 
-    </style>
-</head>
-<body class="bg-black text-slate-200 antialiased animate-fadeIn">
+    // --- Helper function for color interpolation ---
+    function lerpColor(start, end, amount) {
+        const r = (1 - amount) * start[0] + amount * end[0];
+        const g = (1 - amount) * start[1] + amount * end[1];
+        const b = (1 - amount) * start[2] + amount * end[2];
+        return `rgb(${parseInt(r)}, ${parseInt(g)}, ${parseInt(b)})`;
+    }
 
-    <!-- Header --><header class="bg-black shadow-lg sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <!-- Logo and Company Name --><a href="#" class="flex items-center space-x-3">
-                <!-- MODIFIED: Updated image src -->
-                <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/sdalogo.jpeg" alt="SDA Logo" class="sda-logo-small object-contain"
-                     onerror="this.src='https://placehold.co/100x100/334155/white?text=SDA'; this.onerror=null;">
-                <span class="text-xl font-bold text-slate-100">SDA Productions WA</span>
-            </a>
-            
-            <!-- Navigation Links --><div class="hidden md:flex space-x-6">
-                <a href="#" class="text-slate-300 hover:text-indigo-400 font-medium">Home</a>
-                <a href="#about" class="text-slate-300 hover:text-indigo-400 font-medium">About</a>
-                <a href="#contact" class="text-slate-300 hover:text-indigo-400 font-medium">Contact</a>
-                <!-- Updated link to point to the new portal.html file -->
-                <a href="portal.html" class="text-slate-300 hover:text-indigo-400 font-medium">Portal</a>
-            </div>
-            
-            <!-- Mobile Menu Button (placeholder) --><div class="md:hidden">
-                <button class="text-slate-300 focus:outline-none">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                </button>
-            </div>
-        </nav>
-    </header>
+    // --- 1. Background Fade on Scroll ---
+    function handleScrollFade() {
+         if (!matildaSection || !frozenSection) return;
+         
+         const scrollY = window.scrollY;
+         
+         // Define the start and end points for the fade
+         const fadeStart = matildaSection.offsetTop + (matildaSection.offsetHeight * 0.25); // Start fade 25% into Matilda section
+         const fadeEnd = frozenSection.offsetTop + (frozenSection.offsetHeight * 0.25);   // End fade 25% into Frozen section
+         
+         // Calculate progress (0.0 to 1.0)
+         let progress = (scrollY - fadeStart) / (fadeEnd - fadeStart);
+         progress = Math.min(1, Math.max(0, progress)); // Clamp progress between 0 and 1
+         
+         // Interpolate the background color
+         const newBgColor = lerpColor(matildaColor, frozenColor, progress);
+         pageBody.style.backgroundColor = newBgColor;
+         
+         // Interpolate the main text color
+         const newTextColor = lerpColor(matildaTextColor, frozenTextColor, progress);
+         pageBody.style.color = newTextColor;
+         
+         // Also update the nav link colors based on progress
+         updateNavColors(progress);
+    }
 
-    <!-- Main Content --><main>
-        <!-- Hero Section - Matilda Jr. --><section class="hero-gradient py-16 md:py-24">
-            <div class="container mx-auto px-6">
-                <div class="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-                    
-                    <!-- Left Column: Text Content --><div class="md:w-1/2 text-center md:text-left">
-                        <span class="text-indigo-400 font-semibold uppercase tracking-wider animate-fadeInUp">Coming Soon!</span>
-                        <h1 class="text-4xl md:text-6xl font-bold text-white mt-2 mb-6 animate-fadeInUp delay-200">Matilda The Musical JR.</h1>
-                        <p class="text-lg text-slate-300 mb-8 animate-fadeInUp delay-400">
-                            Get ready to be a little bit naughty! SDA Productions WA is thrilled to announce our next big show.
-                        </p>
-                        
-                        <!-- Key Dates --><div class="space-y-4 mb-10 animate-fadeInUp delay-600">
-                            <div class="flex items-start p-4 card-bg-dark rounded-lg shadow-md border border-slate-700 transition-transform duration-300 hover:scale-105">
-                                <svg class="w-6 h-6 text-indigo-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <div>
-                                    <h3 class="font-semibold text-white">Rehearsals</h3>
-                                    <p class="text-slate-300">Starting early December 2025 & January 2026.</p>
-                                </div>
-                            </div>
-                            <div class="flex items-start p-4 card-bg-dark rounded-lg shadow-md border border-slate-700 transition-transform duration-300 hover:scale-105">
-                                <svg class="w-6 h-6 text-indigo-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path></svg>
-                                <div>
-                                    <h3 class="font-semibold text-white">Performances</h3>
-                                    <p class="text-slate-300">Late January & February 2026.</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Call to Action Button (Disabled) -->
-                        <button disabled class="inline-block bg-gray-500 text-gray-300 font-bold py-3 px-8 rounded-lg shadow-xl cursor-not-allowed animate-fadeInUp" style="animation-delay: 800ms;">
-                            Tickets Soon
-                        </button>
-                    </div>
-                    
-                    <!-- Right Column: Matilda Jr. Logo --><div class="md:w-1/2 mt-8 md:mt-0 animate-zoomIn delay-200">
-                        <!-- MODIFIED: Updated image src -->
-                        <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/MATILDA%20JR_FULL_VERTICAL_4C.jpg" 
-                             alt="Matilda The Musical Jr. Logo" 
-                             class="rounded-lg shadow-2xl w-full max-w-md mx-auto"
-                             onerror="this.src='https://placehold.co/600x750/334155/e0e7ff?text=Matilda+Jr.+Logo'; this.onerror=null;">
-                    </div>
-                </div>
-            </div>
-        </section>
+    // --- 2. Arrival Emphasis (Pulse) ---
+    const sections = document.querySelectorAll('section[id]');
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.5 // Trigger when 50% of the section is visible
+    };
 
-        <!-- About SDA Section --><section id="about" class="py-16 md:py-24 bg-gradient-to-b from-black to-slate-800">
-            <div class="container mx-auto px-6 text-center max-w-3xl">
-                <!-- MODIFIED: Changed max-w-sm to max-w-48 to make it 50% smaller -->
-                <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/logosdatrans.png"
-                     alt="SDA Logo" class="w-full max-w-48 object-contain mx-auto mb-6 transition-transform duration-300 hover:scale-105 bg-black"
-                     onerror="this.src='https://placehold.co/600x150/334155/white?text=SDA+Productions+WA'; this.onerror=null;">
-                <h2 class="text-3xl font-bold text-white mb-4">About SDA Productions WA</h2>
-                <p class="text-lg text-slate-300 leading-relaxed">
-                    SDA Productions WA is committed to providing high-quality, affordable, and family-friendly theatre productions to the local community. We believe in creating a fun and positive environment, ensuring every cast member feels valued and supported. We are dedicated to helping each performer reach their potential, whether for recreation or to support their desire to pursue a career in the performing arts.
-                </p>
-            </div>
-        </section>
-
-        <!-- DELETING THE EMPTY SECTIONS THAT CAUSED THE GAP -->
-    </main>
-
-    <!-- Footer --><footer id="contact" class="bg-black text-slate-400 py-16">
-        <div class="container mx-auto px-6 text-center">
-            <h3 class="text-2xl font-bold text-white mb-4">Get In Touch</h3>
-            <p class="mb-8">Follow us on social media for the latest updates on auditions, enrolments, and shows!</p>
-            
-            <!-- Social Media Icons --><div class="flex justify-center space-x-6 mb-8">
-                <!-- Facebook -->
-                <a href="https://www.facebook.com/SingDanceActWa/" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-indigo-400 transition-transform duration-300 hover:scale-110">
-                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg>
-                    <span class="sr-only">Facebook</span>
-                </a>
-                <!-- Instagram -->
-                <a href="https://www.instagram.com/singdanceactwa/?hl=en" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-indigo-400 transition-transform duration-300 hover:scale-110">
-                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C8.16 2 7.72 2.02 6.8 2.07C5.88 2.12 5.23 2.25 4.68 2.45C4.1 2.67 3.6 2.93 3.12 3.4C2.65 3.88 2.4 4.38 2.18 4.96C1.98 5.5 1.85 6.15 1.8 7.07C1.75 7.99 1.73 8.43 1.73 12C1.73 15.57 1.75 16.01 1.8 16.93C1.85 17.85 1.98 18.5 2.18 19.04C2.4 19.62 2.65 20.12 3.12 20.6C3.6 21.07 4.1 21.33 4.68 21.55C5.23 21.75 5.88 21.88 6.8 21.93C7.72 21.98 8.16 22 12 22C15.84 22 16.28 21.98 17.2 21.93C18.12 21.88 18.77 21.75 19.32 21.55C19.9 21.33 20.4 21.07 20.88 20.6C21.35 20.12 21.6 19.62 21.82 19.04C22.02 18.5 22.15 17.85 22.2 16.93C22.25 16.01 22.27 15.57 22.27 12C22.27 8.43 22.25 7.99 22.2 7.07C22.15 6.15 22.02 5.5 21.82 4.96C21.6 4.38 21.35 3.88 20.88 3.4C20.4 2.93 19.9 2.67 19.32 2.45C18.77 2.25 18.12 2.12 17.2 2.07C16.28 2.02 15.84 2 12 2ZM12 4.67C15.5 4.67 15.9 4.68 16.73 4.72C17.5 4.76 17.95 4.9 18.23 5.02C18.57 5.17 18.82 5.3 19.05 5.53C19.28 5.76 19.41 6.01 19.56 6.35C19.68 6.63 19.82 7.08 19.86 7.85C19.9 8.62 19.92 9.02 19.92 12C19.92 14.98 19.9 15.38 19.86 16.15C19.82 16.92 19.68 17.37 19.56 17.65C19.41 17.99 19.28 18.24 19.05 18.47C18.82 18.7 18.57 18.83 18.23 18.98C17.95 19.1 17.5 19.24 16.73 19.28C15.9 19.32 15.5 19.33 12 19.33C8.5 19.33 8.1 19.32 7.27 19.28C6.5 19.24 6.05 19.1 5.77 18.98C5.43 18.83 5.18 18.7 4.95 18.47C4.72 18.24 4.59 17.99 4.44 17.65C4.32 17.37 4.18 16.92 4.14 16.15C4.1 15.38 4.08 14.98 4.08 12C4.08 9.02 4.1 8.62 4.14 7.85C4.18 7.08 4.32 6.63 4.44 6.35C4.59 6.01 4.72 5.76 4.95 5.53C5.18 5.3 5.43 5.17 5.77 5.02C6.05 4.9 6.5 4.76 7.27 4.72C8.1 4.68 8.5 4.67 12 4.67ZM12 7.27C9.38 7.27 7.27 9.38 7.27 12C7.27 14.62 9.38 16.73 12 16.73C14.62 16.73 16.73 14.62 16.73 12C16.73 9.38 14.62 7.27 12 7.27ZM12 14.38C10.69 14.38 9.62 13.31 9.62 12C9.62 10.69 10.69 9.62 12 9.62C13.31 9.62 14.38 10.69 14.38 12C14.38 13.31 13.31 14.38 12 14.38ZM16.3 7.83C15.82 7.83 15.44 7.44 15.44 6.96C15.44 6.48 15.82 6.1 16.3 6.1C16.78 6.1 17.17 6.48 17.17 6.96C1To 7.44 16.78 7.83 16.3 7.83Z" clip-rule="evenodd" /></svg>
-                    <span class="sr-only">Instagram</span>
-                </a>
-            </div>
-            
-            <p class="text-sm">&copy; 2025 SDA Productions WA. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <!-- Login Script -->
-    <script>
-        // The login script is removed from this page
-    </script>
-
-    <!-- Scroll Animation Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Options for the observer
-            const options = {
-                root: null, // relative to the viewport
-                rootMargin: '0px',
-                threshold: 0.5 // 50% of the item must be visible
-            };
-
-            // The callback function to execute
-            const callback = (entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const target = entry.target;
-                        
-                        // Add the animation class
-                        target.classList.add('animate-arrival');
-
-                        // Remove the class after the animation finishes
-                        // so it can be re-triggered on next scroll
-                        target.addEventListener('animationend', () => {
-                            target.classList.remove('animate-arrival');
-                        }, { once: true }); // 'once: true' removes the listener after it runs
-                    }
-                });
-            };
-
-            // Create the observer
-            const observer = new IntersectionObserver(callback, options);
-
-            // Get the elements to observe
-            const aboutHeading = document.querySelector('#about h2');
-            const contactHeading = document.querySelector('#contact h3');
-
-            // Observe them
-            if (aboutHeading) {
-                observer.observe(aboutHeading);
-            }
-            if (contactHeading) {
-                observer.observe(contactHeading);
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const heading = entry.target.querySelector('h2, h1');
+                if (heading) {
+                    heading.classList.add('pulse-emphasis');
+                    setTimeout(() => heading.classList.remove('pulse-emphasis'), 500);
+                }
             }
         });
-    </script>
+    }, observerOptions);
 
-</body>
-</html>
-
-
-
-
-
-
-
-
-
+    sections.forEach(section => observer.observe(section));
+    
+    // --- 3. Update Nav Link Colors ---
+    // This makes the nav links adapt as you scroll
+    const navLinks = document.querySelectorAll('header nav a');
+    const matildaLink = document.querySelector('a[href="#matilda"]');
+    
+    function updateNavColors(progress) {
+        // progress is 0 (black) to 1 (light blue)
+        
+        // This is a simple text color. We need to fade the *other* links.
+        const navColor = lerpColor(matildaTextColor, frozenTextColor, progress);
+        
+        navLinks.forEach(link => {
+            // Don't fade the 'Matilda' link, it's special (purple)
+            if (link === matildaLink) {
+                // You could fade this too, but for now it stays purple
+                // link.style.color = lerpColor([192, 132, 252], [79, 70, 231], progress);
+            } else {
+                link.style.color = navColor;
+            }
+        });
+    }
+    
+    // --- Event Listeners ---
+    window.addEventListener('scroll', handleScrollFade);
+    
+    // Run it once on load to set the initial color
+    handleScrollFade();
+});
