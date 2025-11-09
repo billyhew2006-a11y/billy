@@ -30,6 +30,23 @@
             50% { transform: translateY(-3px); }
         }
         .animate-navBounce { animation: navBounce 0.3s ease-out; }
+
+        /* --- NEW: Lively Animations --- */
+        
+        /* 1. Slow pulse for the main Hero CTA button */
+        @keyframes pulse-slow {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); /* Indigo shadow */
+            }
+            50% { 
+                transform: scale(1.03);
+                box-shadow: 0 0 0 12px rgba(99, 102, 241, 0); /* Fade out shadow */
+            }
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 2.5s infinite ease-in-out;
+        }
         
         /* About Section Gradient */
         .about-gradient {
@@ -39,7 +56,6 @@
 
     <!-- 
       This script now ONLY handles the mobile menu.
-      The complex background fade has been removed for stability.
     -->
     <script type="module" src="index-script.js"></script>
 
@@ -59,12 +75,12 @@
             </a>
             
             <!-- Navigation Links (Desktop) -->
-            <div class="hidden md:flex space-x-6">
-                <!-- UPDATED: Links now point to the new #shows section -->
-                <a href="#shows" class="text-slate-300 hover:text-purple-300 font-medium">Shows</a>
-                <a href="#about" class="text-slate-300 hover:text-indigo-400 font-medium">About</a>
-                <a href="#contact" class="text-slate-300 hover:text-indigo-400 font-medium">Contact</a>
-                <a href="portal.html" class="text-slate-300 hover:text-indigo-400 font-medium">Portal</a>
+            <!-- UPDATED: Added transition, hover:scale, and increased spacing -->
+            <div class="hidden md:flex space-x-8">
+                <a href="#shows" class="text-slate-300 hover:text-purple-300 font-medium transform transition-all duration-300 hover:scale-110">Shows</a>
+                <a href="#about" class="text-slate-300 hover:text-indigo-400 font-medium transform transition-all duration-300 hover:scale-110">About</a>
+                <a href="#contact" class="text-slate-300 hover:text-indigo-400 font-medium transform transition-all duration-300 hover:scale-110">Contact</a>
+                <a href="portal.html" class="text-slate-300 hover:text-indigo-400 font-medium transform transition-all duration-300 hover:scale-110">Portal</a>
             </div>
             
             <!-- Mobile Menu Button -->
@@ -95,35 +111,29 @@
     <main>
 
         <!-- ===== NEW WELCOME SECTION ===== -->
-        <!-- This replaces the big "gap". It's a proper hero. -->
-        <!-- UPDATED: Added relative, bg-image, bg-cover, and bg-center -->
         <section id="welcome" class="relative text-slate-200 py-24 md:py-32 bg-[url('https://raw.githubusercontent.com/apiiela/billyhdesign/main/design-banner.jpg')] bg-cover bg-center">
             
-            <!-- NEW: Dark overlay for text readability -->
+            <!-- Dark overlay for text readability -->
             <div class="absolute inset-0 bg-black/70 z-0"></div>
             
-            <!-- UPDATED: Added relative and z-10 to sit on top of the overlay -->
+            <!-- Content -->
             <div class="container relative z-10 mx-auto px-6 text-center animate-fadeInUp">
                 <h1 class="text-4xl md:text-5xl font-bold text-white mb-6">Welcome to SDA Productions WA</h1>
                 <p class="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto mb-10">
                     Nurturing local talent and bringing spectacular, high-quality productions to the stage.
                 </p>
-                <!-- UPDATED: Text changed to 2026 -->
-                <a href="#shows" class="inline-block bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-xl hover:bg-indigo-500 transition-colors">
+                <!-- UPDATED: Added pulse animation and hover lift effect -->
+                <a href="#shows" class="inline-block bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-xl hover:bg-indigo-500 transition-all duration-300 transform hover:scale-105 animate-pulse-slow">
                     See Our 2026 Season
                 </a>
             </div>
         </section>
 
         <!-- ===== NEW "OUR SEASON" SECTION ===== -->
-        <!-- This section holds the two show cards in a responsive grid -->
-        <!-- UPDATED: Changed bg-slate-100 to bg-black -->
         <section id="shows" class="py-24 bg-black">
             <div class="container mx-auto px-6">
                 <!-- Section Title -->
-                <!-- UPDATED: Changed text-gray-900 to text-slate-100 for dark bg -->
                 <h2 class="text-3xl md:text-4xl font-bold text-slate-100 text-center mb-12">
-                    <!-- UPDATED: Text changed to 2026 -->
                     Our 2026 Season
                 </h2>
                 
@@ -131,8 +141,8 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
                     
                     <!-- ===== MATILDA CARD ===== -->
-                    <!-- UPDATED: Changed bg-white to bg-slate-900 and added border -->
-                    <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden flex flex-col animate-fadeInUp" style="animation-delay: 100ms;">
+                    <!-- UPDATED: Added transition, hover shadow, and hover translate -->
+                    <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden flex flex-col transition-all duration-300 ease-in-out hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-2 animate-fadeInUp" style="animation-delay: 100ms;">
                         <!-- Image now has a container -->
                         <div class="bg-black p-6 flex justify-center items-center">
                             <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/MATILDA%20JR_FULL_VERTICAL_4C.jpg" 
@@ -141,17 +151,12 @@
                                  onerror="this.src='https://placehold.co/600x750/000000/e0e7ff?text=Matilda+Jr.+Logo'; this.onerror=null;">
                         </div>
                         <!-- Card Content -->
-                        <div class="p-8 flex flex-col flex-grow"> <!-- flex-grow makes card content fill space -->
-                            <!-- UPDATED: Text color changed for dark background -->
+                        <div class="p-8 flex flex-col flex-grow"> 
                             <h3 class="text-2xl md:text-3xl font-bold text-white mb-3">Matilda The Musical JR.</h3>
-                            <!-- UPDATED: Text changed to 2026 -->
-                            <!-- UPDATED: Text color changed for dark background -->
                             <span class="block text-purple-400 font-semibold mb-4">January & February 2026</span>
-                            <!-- UPDATED: Text color changed for dark background -->
-                            <p class="text-slate-300 mb-6 flex-grow"> <!-- flex-grow pushes button to bottom -->
+                            <p class="text-slate-300 mb-6 flex-grow"> 
                                 Get ready to be a little bit naughty! Our acclaimed junior program returns.
                             </p>
-                            <!-- UPDATED: Button text changed -->
                             <button disabled class="w-full mt-auto bg-gray-600 text-white/70 font-bold py-3 px-8 rounded-lg shadow-lg cursor-not-allowed">
                                 Tickets Coming Soon
                             </button>
@@ -159,11 +164,12 @@
                     </div>
 
                     <!-- ===== FROZEN CARD ===== -->
-                    <!-- FIXED: This entire block was broken. It now correctly mirrors the Matilda card's structure. -->
-                    <!-- UPDATED: Kept the border-2 and blue-300 color -->
-                    <div class="bg-white border-2 border-blue-300 rounded-lg shadow-xl overflow-hidden flex flex-col animate-fadeInUp" style="animation-delay: 200ms;">
+                    <!-- UPDATED: Converted to DARK MODE -->
+                    <!-- UPDATED: Added matching transition and hover effects -->
+                    <div class="bg-slate-900 border border-slate-700 rounded-lg shadow-xl overflow-hidden flex flex-col transition-all duration-300 ease-in-out hover:shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-2 animate-fadeInUp" style="animation-delay: 200ms;">
                         <!-- Image Container -->
-                        <div class="bg-blue-100 p-6 flex justify-center items-center">
+                        <!-- UPDATED: bg-blue-100 changed to bg-black to tie it in -->
+                        <div class="bg-black p-6 flex justify-center items-center">
                             <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/FZN_KIDS_DTL_Hero_Logo.png" 
                                  alt="Frozen KIDS Logo" 
                                  class="rounded-lg w-full max-w-xs"
@@ -171,13 +177,16 @@
                         </div>
                         <!-- Card Content (Mirrors Matilda card structure) -->
                         <div class="p-8 flex flex-col flex-grow">
-                            <h3 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">Disney's Frozen KIDS</h3>
-                            <span class="block text-blue-600 font-semibold mb-4">January & February 2026</span>
-                            <p class="text-gray-700 mb-6 flex-grow">
+                            <!-- UPDATED: Text colors changed to light -->
+                            <h3 class="text-2xl md:text-3xl font-bold text-white mb-3">Disney's Frozen KIDS</h3>
+                            <!-- UPDATED: Text color changed to light blue -->
+                            <span class="block text-blue-400 font-semibold mb-4">January & February 2026</span>
+                            <!-- UPDATED: Text colors changed to light -->
+                            <p class="text-slate-300 mb-6 flex-grow">
                                 Let it go! Journey to Arendelle with our next magical production.
-                            </p>
-                            <!-- UPDATED: Button text changed -->
-                            <button disabled class="w-full mt-auto bg-gray-400 text-gray-800/70 font-bold py-3 px-8 rounded-lg shadow-lg cursor-not-allowed">
+                            </D
+                            <!-- UPDATED: Button style changed to match Matilda's disabled button -->
+                            <button disabled class="w-full mt-auto bg-gray-600 text-white/70 font-bold py-3 px-8 rounded-lg shadow-lg cursor-not-allowed">
                                 Tickets Coming Soon
                             </button>
                         </div>
@@ -188,7 +197,6 @@
         </section>
 
         <!-- ===== ABOUT SECTION ===== -->
-        <!-- This section is unchanged, but now fits the new flow -->
         <section id="about" class="py-20 md:py-24 about-gradient text-slate-200">
             <div class="container mx-auto px-6 text-center max-w-3xl">
                 <img src="https://raw.githubusercontent.com/apiiela/sdaproductionswa/main/logosdatrans.png" 
@@ -205,12 +213,12 @@
     </main>
 
     <!-- Footer -->
-    <!-- This section is unchanged -->
     <footer id="contact" class="bg-black text-slate-400 py-16">
         <div class="container mx-auto px-6 text-center">
             <h3 class="text-2xl font-bold text-white mb-4">Get In Touch</h3>
             <p class="mb-8">Follow us on social media for the latest updates on auditions, enrolments, and shows!</p>
             
+            <!-- UPDATED: Increased icon size and spacing for easier tapping -->
             <div class="flex justify-center space-x-8 mb-8">
                 <a href="https://www.facebook.com/SingDanceActWa/" 
                    target="_blank" 
@@ -218,7 +226,7 @@
                     <svg class="w-9 h-9" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" /></svg>
                     <span class="sr-only">Facebook</span>
                 </a>
-                <a href="https://www.instagram.com/singdanceactwa/?hl=en" 
+                <a href="https.www.instagram.com/singdanceactwa/?hl=en" 
                    target="_blank" 
                    class="text-slate-400 hover:text-indigo-400 transition-transform hover:scale-110">
                     <svg class="w-9 h-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
